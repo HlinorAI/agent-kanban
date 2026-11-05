@@ -11,3 +11,9 @@ Resume point: publish step in TODO.md "Now".
 - Owner approved: private repo `HlinorAI/agent-kanban`. Created via gh (account hlinor-systems), pushed main (60fe513), verified visibility=PRIVATE.
 - Commit author set to owner's global identity; .gitignore added (kanban.html, config, .bak/tmp, pycache).
 - Next: public flip only by explicit owner approval; then final polish (done same day: ProjectKanban.app rename to avoid collision with personal installs, repo description+topics, pre-public audit).
+
+## 2026-11-05 (pre-public audit)
+- Found and fixed: install/uninstall scripts committed without exec bit → every user's ./install-macos.sh would fail; fixed via update-index --chmod=+x (d02c53d). Push initially failed silently (transient SSL) — caught by comparing local HEAD vs GitHub API.
+- Live-tested full public flow from a fresh GitHub clone into /tmp: quickstart (init+update on 2 synthetic repos, auto-register=2, KB_UPDATED=today), install ProjectKanban.app (renamed from Kanban.app to avoid collision with personal installs), launch → updater rc=0, uninstall clean (app+LaunchAgent gone).
+- Scans: secrets (token/key patterns) across all git history — clean; personal strings (emails, /Users/, project names) — clean; artifacts in index — none.
+- Known leftovers for public flip: UI strings Russian (i18n TODO), Linux install notes TODO, commit author identity = owner's global git config (owner's call).

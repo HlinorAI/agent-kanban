@@ -75,7 +75,7 @@ plutil -lint "$APP_SRC/Contents/Info.plist"
 rm -rf "$TARGET"
 cp -R "$APP_SRC" "$TARGET"
 echo "Installed: $TARGET"
-echo "First launch: double-click Kanban.app; allow Documents access when macOS asks (one time)."
+echo "First launch: double-click ProjectKanban.app; allow Documents access when macOS asks (one time)."
 
 if [ "$SCHEDULE" -eq 1 ]; then
   PLIST="$HOME/Library/LaunchAgents/io.github.agent-kanban.update.plist"
