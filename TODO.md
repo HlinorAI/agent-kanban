@@ -9,9 +9,11 @@
 - [x] `templates/` — agent SSOT skeletons.
 - [x] Tests on synthetic repos in /tmp (init → update → data block verified).
 - [x] README + LICENSE + local git commit.
+- [x] Published as **private** `HlinorAI/agent-kanban` (owner-approved 2026-11-05).
 
 ## Next
-- [ ] Publish to GitHub after owner approves account/name (public repo).
+- [ ] Flip to public — ONLY after explicit owner approval.
+- [ ] Set GitHub repo description + topics when making public.
 - [ ] i18n: English UI strings behind a small dictionary.
 - [ ] Auto-refresh: updater pings a tiny HTTP endpoint OR dashboard polls file mtime.
 - [ ] Linux/Windows install notes (+ optional cron/systemd timer example).
