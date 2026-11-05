@@ -13,24 +13,34 @@ One HTML file shows every local repo as a draggable card: stage, category, last 
 - `kanban/` — the dashboard (single HTML file), updater, installer
 - `templates/` — agent SSOT skeletons: `AGENTS.md`, `PROJECT_PLAN.md`, `TODO.md`, `CHANGELOG.md`, `WORKLOG.md`
 
-## Install — method 1: CLI (any OS)
+## Install — method 1: first-run wizard (any OS)
 
 ```bash
 git clone https://github.com/HlinorAI/agent-kanban.git
 cd agent-kanban
+python3 kanban/kanban-setup.py
+```
+
+The wizard scans common code folders (`~/Documents`, `~/code`, `~/Developer`, …), shows the git repositories it found, builds your personal board in `~/kanban` and offers to turn on **agent memory**: it drops `AGENTS.md` (optionally the full SSOT skeletons) into your repos — showing exactly which files will be created; existing files are never overwritten. Nothing is written without your confirmation.
+
+Non-interactive flags for scripting: `--roots DIR[,DIR]`, `--target DIR`, `--yes`, `--seed`, `--seed-full`.
+
+## Install — method 2: one explicit command (any OS)
+
+```bash
 python3 kanban/kanban-init.py ~/code        # a folder with your git repos (one level deep)
 open ~/code/kanban.html                     # xdg-open on Linux
 ```
 
-`kanban-init.py` finds your repos, writes `kanban-projects.json` (the repo list), creates `kanban.html` from the template and fills in repo facts.
+`kanban-init.py` writes `kanban-projects.json` and `kanban.html` for the folder you point it at, then fills in repo facts.
 
 Refresh facts any time:
 
 ```bash
-python3 kanban/kanban-update.py ~/code/kanban.html
+python3 kanban/kanban-update.py ~/kanban/kanban.html
 ```
 
-## Install — method 2: macOS app
+## Install — method 3: macOS app
 
 ```bash
 cd agent-kanban/kanban
@@ -39,7 +49,7 @@ cd agent-kanban/kanban
 ./uninstall-macos.sh                                            # full removal
 ```
 
-The app opens the board in a standalone Chrome window (no address bar) and refreshes repo facts in the background on every launch — the board opens instantly, fresh data is visible on next open or ⌘R. First launch: macOS asks for file access once — required to read your repos, including scheduled background runs. Logs: `~/Library/Logs/kanban-app.log`.
+The app opens the board in a standalone Chrome window (no address bar) and refreshes repo facts in the background on every launch — the board opens instantly, fresh data is visible on next open or ⌘R. If no board exists yet, first launch runs the setup wizard (method 1) in a Terminal window. First launch also: macOS asks for file access once — required to read your repos, including scheduled background runs. Logs: `~/Library/Logs/kanban-app.log`.
 
 ## Scheduled refresh without the app (cron, Linux/macOS)
 

@@ -20,3 +20,8 @@ Resume point: publish step in TODO.md "Now".
 
 ## 2026-11-05 (решение по авторству)
 - Owner decision: commit authorship stays as-is (owner's global git identity, email visible) — "contacts belong inside git"; no noreply rewrite, no CONTACTS file. Last pre-public leftover resolved; public flip awaits owner's explicit word.
+
+## 2026-11-05 (first-run wizard v0.2)
+- Owner approved full wizard scenario. Spec .ai/specs/first-run-wizard.md; kanban-setup.py implemented; installer: default board ~/kanban/kanban.html, first launch without board → Terminal wizard (macos-first-run.command).
+- Tests (synthetic /tmp tree): depth-1/2 discovery, junk+hidden excluded, --yes/--seed/--seed-full, sentinel AGENTS.md not overwritten, refuse-to-replace existing board, interactive defaults with EOF-safe cancel. All green.
+- READMEs EN/RU: wizard = method 1; init = method 2; app = method 3; cron unchanged.

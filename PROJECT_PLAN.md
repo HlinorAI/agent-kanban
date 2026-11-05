@@ -14,7 +14,8 @@ Solo developers working with multiple AI agents (Claude Code, Codex, ZCode, etc.
 ## Architecture
 - `kanban/kanban.html` — user's dashboard, generated from `kanban.html.template`. Manual data block (STAGES/CATS/MODES/P/GROUP/G) + generated block between `KB-DATA-BEGIN/END` markers.
 - `kanban/kanban-update.py` — reads `kanban-projects.json`, collects git facts per repo, regenerates only the marker block; `.bak` backup; guards protect manual data.
-- `kanban/kanban-init.py` — scans a root dir for git repos → writes `kanban-projects.json` + instantiates `kanban.html`.
+- `kanban/kanban-setup.py` — first-run wizard: auto-discovery of repos, board in `~/kanban`, optional agent-memory seeding (confirmed, never overwrites).
+- `kanban/kanban-init.py` — non-interactive alternative: scans a given dir → config + `kanban.html`.
 - `kanban/install-macos.sh` / `uninstall-macos.sh` — build `Kanban.app` (Chrome `--app` window + background refresh) and optional LaunchAgent (login + daily 09:00). Linux: plain `python3 kanban-update.py` via cron works; docs only.
 - `templates/` — SSOT skeletons (AGENTS.md, PROJECT_PLAN.md, TODO.md, CHANGELOG.md, WORKLOG.md) to copy into any project.
 - No runtime dependencies beyond Python 3.8+ stdlib and git. Local-only: no network calls, no telemetry.

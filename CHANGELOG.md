@@ -10,3 +10,5 @@
 ### 2026-11-05
 - Published as private repo HlinorAI/agent-kanban (main, 60fe513); .gitignore added.
 - Bilingual docs: README.md (EN) + README.ru.md (RU) with three install methods (CLI / macOS app / cron); lean-down of README, removed duplicated roadmap section.
+### Added (same day)
+- First-run wizard `kanban-setup.py`: scans common folders, builds the board in `~/kanban`, seeds AGENTS.md / SSOT skeletons into repos with explicit confirmation (never overwrites). macOS app launches the wizard automatically when no board exists. READMEs updated (wizard = install method 1).

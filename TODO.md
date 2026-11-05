@@ -1,6 +1,7 @@
 # TODO: agent-kanban
 
 ## Now
+- [x] 2026-11-05 First-run wizard (kanban-setup.py): discovery, board in ~/kanban, agent-memory seeding with confirmation; macOS app runs wizard on first launch when no board exists.
 - [x] SSOT files + spec (this dir).
 - [x] Sanitize dashboard template from working prototype (zero personal strings).
 - [x] Config-driven `kanban-update.py` (kanban-projects.json, ~HOME, auto_register).
