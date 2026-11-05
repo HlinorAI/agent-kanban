@@ -50,12 +50,12 @@ minimal cards on the next update (`auto_register: true`).
 
 ```bash
 cd kanban
-./install-macos.sh               # installs Kanban.app
+./install-macos.sh               # installs ProjectKanban.app
 ./install-macos.sh --with-schedule   # + hidden refresh at login and daily 09:00
 ./uninstall-macos.sh
 ```
 
-The app opens the board in a standalone Chrome window (`--app`, no address
+The app (ProjectKanban.app) opens the board in a standalone Chrome window (`--app`, no address
 bar) and refreshes repo facts in the background on every launch. First launch:
 macOS will ask for access to your files (one time) — this is required for
 reading your repos, including from the scheduled background refresh.

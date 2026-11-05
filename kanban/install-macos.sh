@@ -26,8 +26,8 @@ fi
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 [ -x "$CHROME" ] || CHROME=""
 APP_SRC="$HERE/macos/Kanban.app"
-TARGET="/Applications/Kanban.app"
-[ -w /Applications ] 2>/dev/null || TARGET="$HOME/Applications/Kanban.app"
+TARGET="/Applications/ProjectKanban.app"
+[ -w /Applications ] 2>/dev/null || TARGET="$HOME/Applications/ProjectKanban.app"
 
 mkdir -p "$APP_SRC/Contents/MacOS"
 cat > "$APP_SRC/Contents/Info.plist" <<EOF
@@ -35,7 +35,7 @@ cat > "$APP_SRC/Contents/Info.plist" <<EOF
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleName</key><string>Kanban</string>
+	<key>CFBundleName</key><string>ProjectKanban</string>
 	<key>CFBundleDisplayName</key><string>Project Kanban</string>
 	<key>CFBundleIdentifier</key><string>io.github.agent-kanban</string>
 	<key>CFBundleVersion</key><string>1.0.0</string>
