@@ -101,16 +101,16 @@ def ask(prompt, default_yes=False):
         return False
     if not answer:
         return default_yes
-    return answer in ("y", "yes", "д", "да")
+    return answer in ("y", "yes")
 
 
 def create_board(target, repos):
     os.makedirs(target, exist_ok=True)
     html_path = os.path.join(target, "kanban.html")
     config_path = os.path.join(target, "kanban-projects.json")
-    for path, what in ((html_path, "доска"), (config_path, "конфиг")):
-        if os.path.exists(path) and not ask(f"{what} уже существует: {display_path(path)} — заменить? [y/N]: "):
-            print("Отмена: существующие файлы не тронуты.")
+    for path, what in ((html_path, "board"), (config_path, "config")):
+        if os.path.exists(path) and not ask(f"{what} already exists: {display_path(path)} — replace? [y/N]: "):
+            print("Cancelled: existing files untouched.")
             sys.exit(1)
     with open(TEMPLATE, encoding="utf-8") as f:
         html = f.read()
@@ -152,15 +152,15 @@ def seed(repos, files, assume_yes):
         if missing:
             plan.append((p, missing))
     if not plan:
-        print("Посев не нужен: шаблоны уже есть во всех выбранных репозиториях.")
+        print("Seeding not needed: templates already present in all selected repos.")
         return 0, 0
-    print("\nБудут СОЗДАНЫ следующие файлы (существующие не перезаписываются):")
+    print("\nThe following files WILL BE CREATED (existing files are never overwritten):")
     for p, missing in plan:
         print(f"  {display_path(p)}")
         for f in missing:
             print(f"    + {f}")
-    if not assume_yes and not ask("\nЗаписать? [Y/n]: ", default_yes=True):
-        print("Посев отменён — ничего не записано.")
+    if not assume_yes and not ask("\nWrite? [Y/n]: ", default_yes=True):
+        print("Seeding cancelled — nothing was written.")
         return 0, 0
     seeded = skipped = 0
     for p, missing in plan:
@@ -188,21 +188,21 @@ def main():
     args = ap.parse_args()
 
     if not os.path.isfile(TEMPLATE):
-        print(f"ОШИБКА: шаблон не найден: {TEMPLATE}")
+        print(f"ERROR: template not found: {TEMPLATE}")
         sys.exit(1)
 
     target = os.path.realpath(os.path.expanduser(args.target or os.path.join("~", "kanban")))
     roots = [r.strip() for r in args.roots.split(",")] if args.roots else DEFAULT_ROOTS
     exclude = {os.path.realpath(HERE), target, os.path.realpath(TEMPLATES)}
 
-    print("agent-kanban — мастер первого запуска")
-    print(f"Ищу git-репозитории (глубина ≤ {MAX_DEPTH}) в: {', '.join(display_path(os.path.expanduser(r)) for r in roots)}")
+    print("agent-kanban — first-run wizard")
+    print(f"Scanning for git repositories (depth <= {MAX_DEPTH}) in: {', '.join(display_path(os.path.expanduser(r)) for r in roots)}")
     found = discover(roots, exclude)
     if not found:
-        print("Репозиториев не найдено. Укажите корни вручную: --roots '/path/to/repos'")
+        print("No repositories found. Pass roots explicitly: --roots '/path/to/repos'")
         sys.exit(1)
 
-    print(f"\nНайдено репозиториев: {len(found)}")
+    print(f"\nRepositories found: {len(found)}")
     current_root = None
     for i, (p, root) in enumerate(found, 1):
         if root != current_root:
@@ -212,45 +212,45 @@ def main():
 
     if args.yes:
         chosen = found
-        print("Выбраны все (--yes).")
+        print("Selected all (--yes).")
     else:
         try:
-            answer = input(f"\nКакие включить? Enter — все, номера/диапазоны через запятую, q — выход: ")
+            answer = input(f"\nWhich to include? Enter — all, numbers/ranges comma-separated, q — quit: ")
         except EOFError:
-            print("\nОтмена.")
+            print("\nCancelled.")
             sys.exit(1)
-        if answer.strip().lower() in ("q", "quit", "exit", "й"):
-            print("Отмена — ничего не сделано.")
+        if answer.strip().lower() in ("q", "quit", "exit"):
+            print("Cancelled — nothing was done.")
             sys.exit(0)
         idx = parse_selection(answer, len(found))
         if not idx:
-            print("Ничего не выбрано.")
+            print("Nothing selected.")
             sys.exit(1)
         chosen = [found[i] for i in idx]
 
     slugs = unique_slugs(chosen)
-    print(f"\nДоска будет создана в: {display_path(target)} ({len(chosen)} репо)")
+    print(f"\nThe board will be created at: {display_path(target)} ({len(chosen)} repos)")
     html_path = create_board(target, [(p, r) for p, r in chosen])
 
     seed_files = SEED_FULL if args.seed_full else SEED_MIN
     if args.seed or args.seed_full:
         seeded, skipped = seed(chosen, seed_files, assume_yes=True)
-    elif not args.yes and ask(f"\nВключить «память агентов»? (положить {seed_files[0]}" +
-                              (" + SSOT-скелеты" if args.seed_full else "") +
-                              " в выбранные репо) [Y/n]: ", default_yes=True):
+    elif not args.yes and ask(f"\nTurn on agent memory? (place {seed_files[0]}" +
+                              (" + SSOT skeletons" if args.seed_full else "") +
+                              " into the selected repos) [Y/n]: ", default_yes=True):
         seeded, skipped = seed(chosen, seed_files, assume_yes=False)
     else:
         seeded, skipped = 0, 0
-        print("Шаблоны агентов не посеяны — можно позже: python3 kanban/kanban-setup.py --seed --roots ...")
+        print("Agent templates not seeded — do it later: python3 kanban/kanban-setup.py --seed --roots ...")
 
     if not args.no_run:
-        print("\nОбновляю факты по репозиториям…")
+        print("\nUpdating repository facts…")
         subprocess.run([sys.executable, UPDATER, html_path], check=False)
 
-    print("\nГотово.")
-    print(f"  Доска:    {display_path(html_path)}  — откройте в браузере")
-    print(f"  Репо:     {len(chosen)}, шаблонов посеяно: {seeded}" + (f", пропущено существующих: {skipped}" if skipped else ""))
-    print("  Приложение (macOS): cd " + display_path(HERE) + " && ./install-macos.sh --html " + display_path(html_path))
+    print("\nDone.")
+    print(f"  Board:    {display_path(html_path)}  — open in a browser")
+    print(f"  Repos:    {len(chosen)}, templates seeded: {seeded}" + (f", skipped existing: {skipped}" if skipped else ""))
+    print("  macOS app: cd " + display_path(HERE) + " && ./install-macos.sh --html " + display_path(html_path))
 
 
 if __name__ == "__main__":

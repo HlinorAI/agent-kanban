@@ -51,14 +51,46 @@ cd agent-kanban/kanban
 
 The app opens the board in a standalone Chrome window (no address bar) and refreshes repo facts in the background on every launch — the board opens instantly, fresh data is visible on next open or ⌘R. If no board exists yet, first launch runs the setup wizard (method 1) in a Terminal window. First launch also: macOS asks for file access once — required to read your repos, including scheduled background runs. Logs: `~/Library/Logs/kanban-app.log`.
 
-## Scheduled refresh without the app (cron, Linux/macOS)
+## Scheduled refresh without the app (Linux/macOS)
+
+cron:
 
 ```cron
 0 9 * * * cd /path/to/agent-kanban && python3 kanban/kanban-update.py /path/to/kanban.html >> /tmp/kanban-update.log 2>&1
 ```
 
+or a systemd user timer:
+
+```ini
+# ~/.config/systemd/user/kanban-update.service
+[Unit]
+Description=agent-kanban facts refresh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /path/to/agent-kanban/kanban/kanban-update.py /path/to/kanban.html
+```
+
+```ini
+# ~/.config/systemd/user/kanban-update.timer
+[Unit]
+Description=Refresh agent-kanban daily
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+systemctl --user daemon-reload && systemctl --user enable --now kanban-update.timer
+```
+
 ## Editing your board
 
+- UI language: `var LANG = 'en';` near the top of the script in `kanban.html` — change to `'ru'` for Russian (stage names, filters, detail panel are fully translated).
 - Cards, categories, descriptions: edit the `var P = [...]` block in `kanban.html`.
 - Everything between `/* KB-DATA-BEGIN … KB-DATA-END */` belongs to the updater — it makes a `.bak` first and refuses to save if its guards detect manual data in the zone.
 - Repos listed in `kanban-projects.json` but missing from `P` get minimal auto-generated cards (`auto_register: true`) — enrich them later.
@@ -75,8 +107,7 @@ Local-only by design: reads your repos via `git` and the filesystem, never opens
 
 ## Known limitations
 
-- UI strings are in Russian in v0.1 (i18n planned — see TODO.md).
-- Very large repo folders scan slowly.
+- Very large repo folders scan slowly (the updater uses `git ls-files` and respects `.gitignore`, but huge repos still take a moment).
 - The single-file board stays comfortable up to ~100 cards.
 
 ## License

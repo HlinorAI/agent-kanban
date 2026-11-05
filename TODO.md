@@ -15,10 +15,10 @@
 ## Next
 - [x] 2026-11-05 Flipped to public by explicit owner approval (description + topics set earlier).
 - [ ] Set GitHub repo description + topics when making public.
-- [ ] i18n: English UI strings behind a small dictionary (README now bilingual EN/RU; UI still Russian).
+- [x] 2026-11-05 i18n: UI dictionary EN/RU in template (var LANG, default 'en'), zero Cyrillic in code/CLI; board rendered via headless Chrome EN+RU.
 - [ ] Auto-refresh: updater pings a tiny HTTP endpoint OR dashboard polls file mtime.
-- [ ] Linux/Windows install notes (+ optional cron/systemd timer example).
-- [ ] Performance: `git ls-files` fast path for large repos.
+- [x] 2026-11-05 Linux: cron + systemd user timer documented in README EN/RU (Windows — backlog).
+- [x] 2026-11-05 Performance: git ls-files fast path (respects .gitignore), single-pass stats; os.walk fallback for non-git dirs.
 - [ ] Optional GitHub Actions badge/stats columns.
 
 ## Blocked

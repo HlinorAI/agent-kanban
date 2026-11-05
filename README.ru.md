@@ -51,14 +51,46 @@ cd agent-kanban/kanban
 
 Приложение открывает доску в отдельном окне Chrome (без адресной строки) и при каждом запуске обновляет факты в фоне — окно открывается мгновенно, свежие данные видны при следующем открытии или по ⌘R. Если доски ещё нет, первый запуск откроет мастер установки (способ 1) в окне Терминала. Также при первом запуске macOS один раз спросит доступ к файлам — это нужно для чтения ваших репозиториев, включая фоновые запуски по расписанию. Логи: `~/Library/Logs/kanban-app.log`.
 
-## Обновление по расписанию без приложения (cron, Linux/macOS)
+## Обновление по расписанию без приложения (Linux/macOS)
+
+cron:
 
 ```cron
 0 9 * * * cd /путь/к/agent-kanban && python3 kanban/kanban-update.py /путь/к/kanban.html >> /tmp/kanban-update.log 2>&1
 ```
 
+или systemd user-таймер:
+
+```ini
+# ~/.config/systemd/user/kanban-update.service
+[Unit]
+Description=agent-kanban facts refresh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /путь/к/agent-kanban/kanban/kanban-update.py /путь/к/kanban.html
+```
+
+```ini
+# ~/.config/systemd/user/kanban-update.timer
+[Unit]
+Description=Refresh agent-kanban daily
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+systemctl --user daemon-reload && systemctl --user enable --now kanban-update.timer
+```
+
 ## Как править доску
 
+- Язык интерфейса: `var LANG = 'en';` в начале скрипта внутри `kanban.html` — замените на `'ru'` для русского (стадии, фильтры, панель деталей переведены полностью).
 - Карточки, категории, описания: редактируйте блок `var P = [...]` в `kanban.html`.
 - Всё между `/* KB-DATA-BEGIN … KB-DATA-END */` — зона updater-а: он сначала делает `.bak` и отказывается писать, если guard-и обнаружили ручные данные в зоне.
 - Репозитории из `kanban-projects.json`, которых нет в `P`, получают минимальные автокарточки (`auto_register: true`) — позже дополните их описаниями.
@@ -75,8 +107,7 @@ cd agent-kanban/kanban
 
 ## Известные ограничения
 
-- Строки интерфейса в v0.1 — русские (i18n запланирован, см. TODO.md).
-- Очень большие папки репозиториев сканируются медленно.
+- Очень большие папки репозиториев сканируются медленно (updater использует `git ls-files` и уважает `.gitignore`, но огромные репо всё же требуют времени).
 - Одностраничной доске комфортно примерно до 100 карточек.
 
 ## Лицензия

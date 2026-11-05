@@ -18,16 +18,16 @@ body {
 <div id="kanban-root">
   <div class="kb-head">
     <h2>Project Kanban</h2>
-    <div class="kb-sub"><span id="kb-total" class="tabular-nums"></span> проектов · данные по репозиториям на <span id="kb-updated"></span> · карточки перетаскиваются, порядок сохраняется локально</div>
-    <div class="kb-legend">Режимы: 🤝 с агентами · 🧑‍💻 соло · 📦 клон/справочник · ◼ семейство — связанные части одного проекта</div>
+    <div class="kb-sub"><span id="kb-total" class="tabular-nums"></span> <span id="kb-sub-mid"></span> <span id="kb-updated"></span><span id="kb-sub-tail"></span></div>
+    <div class="kb-legend" id="kb-legend"></div>
   </div>
   <div class="kb-controls">
-    <label class="kb-ctl">Категория <select id="kb-f-cat" class="kb-sel"></select></label>
-    <label class="kb-ctl">Режим <select id="kb-f-mode" class="kb-sel"></select></label>
-    <button type="button" class="kb-reset" id="kb-f-reset" hidden>Сбросить фильтры</button>
+    <label class="kb-ctl"><span id="kb-lbl-cat"></span> <select id="kb-f-cat" class="kb-sel"></select></label>
+    <label class="kb-ctl"><span id="kb-lbl-mode"></span> <select id="kb-f-mode" class="kb-sel"></select></label>
+    <button type="button" class="kb-reset" id="kb-f-reset" hidden></button>
   </div>
   <div class="kb-body">
-    <div class="kb-board" id="kb-board" aria-label="Канбан проектов"></div>
+    <div class="kb-board" id="kb-board" aria-label=""></div>
     <aside class="kb-detail" id="kb-detail" hidden></aside>
   </div>
 </div>
@@ -104,18 +104,52 @@ body {
 (function(){
   var root = document.getElementById('kanban-root');
   var KEY = 'agent-kanban-v1';
+  var LANG = 'en'; /* UI language: 'en' or 'ru' */
+  var UI = {
+    en: {
+      sub_facts:'\u00b7 repo facts as of', sub_hint:'\u00b7 drag cards between stages \u2014 order is saved locally',
+      legend:'Modes: \ud83e\udd1d with agents \u00b7 \ud83e\udd11 solo \u00b7 \ud83d\udce6 clone/reference \u00b7 \u25fc family \u2014 related parts of one project',
+      filter_cat:'Category', filter_mode:'Mode', reset_filters:'Reset filters', board_aria:'Project kanban',
+      st_idea:'Idea / Discovery', st_proto:'Prototype', st_dev:'In development', st_beta:'Beta / published', st_prod:'Live / production', st_archive:'Paused / archived',
+      cat_agent:'Agent platform', cat_product:'Product', cat_site:'Site / shop', cat_tool:'Tool', cat_ops:'Ops / knowledge', cat_lib:'Reference',
+      mode_agents:'\ud83e\udd1d with agents', mode_solo:'\ud83e\udd11 solo', mode_clone:'\ud83d\udce6 clone',
+      mv_earlier:'Move {name} one stage earlier', mv_later:'Move {name} one stage later', stage_earlier:'Stage earlier', stage_later:'Stage later',
+      shown_of:'showing {n} of {m} projects', projects_total:'{n} projects',
+      k_files:'k files', family:'Family',
+      g_r7:'last 7 days', g_commits:'commits', g_authors:'authors', g_branches:'branches', g_dirty:'uncommitted',
+      r_size:'Size', r_stack:'Stack', r_has:'Has', r_start:'Started', r_activity:'Activity', r_path:'Path', no_data:'\u2014 no data',
+      notes:'Notes', notes_ph:'Add project details \u2014 saved locally', notes_hint:'saved automatically in this browser', close_panel:'Close panel', all:'all',
+      filesWord: function(n){ return n===1?'file':'files'; }
+    },
+    ru: {
+      sub_facts:'\u00b7 \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u043e \u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u044f\u043c \u043d\u0430', sub_hint:'\u00b7 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438 \u043f\u0435\u0440\u0435\u0442\u0430\u0441\u043a\u0438\u0432\u0430\u044e\u0442\u0441\u044f, \u043f\u043e\u0440\u044f\u0434\u043e\u043a \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442\u0441\u044f \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e',
+      legend:'\u0420\u0435\u0436\u0438\u043c\u044b: \ud83e\udd1d \u0441 \u0430\u0433\u0435\u043d\u0442\u0430\u043c\u0438 \u00b7 \ud83e\udd11 \u0441\u043e\u043b\u043e \u00b7 \ud83d\udce6 \u043a\u043b\u043e\u043d/\u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u00b7 \u25fc \u0441\u0435\u043c\u0435\u0439\u0441\u0442\u0432\u043e \u2014 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0435 \u0447\u0430\u0441\u0442\u0438 \u043e\u0434\u043d\u043e\u0433\u043e \u043f\u0440\u043e\u0435\u043a\u0442\u0430',
+      filter_cat:'\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f', filter_mode:'\u0420\u0435\u0436\u0438\u043c', reset_filters:'\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u0444\u0438\u043b\u044c\u0442\u0440\u044b', board_aria:'\u041a\u0430\u043d\u0431\u0430\u043d \u043f\u0440\u043e\u0435\u043a\u0442\u043e\u0432',
+      st_idea:'\u0418\u0434\u0435\u044f / Discovery', st_proto:'\u041f\u0440\u043e\u0442\u043e\u0442\u0438\u043f', st_dev:'\u0412 \u0440\u0430\u0437\u0440\u0430\u0431\u043e\u0442\u043a\u0435', st_beta:'\u0411\u0435\u0442\u0430 / \u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d', st_prod:'\u0420\u0430\u0431\u043e\u0442\u0430\u0435\u0442 / \u043f\u0440\u043e\u0434', st_archive:'\u041f\u0430\u0443\u0437\u0430 / \u0430\u0440\u0445\u0438\u0432',
+      cat_agent:'Agent-\u043f\u043b\u0430\u0442\u0444\u043e\u0440\u043c\u0430', cat_product:'\u041f\u0440\u043e\u0434\u0443\u043a\u0442', cat_site:'\u0421\u0430\u0439\u0442/\u043c\u0430\u0433\u0430\u0437\u0438\u043d', cat_tool:'\u0418\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442', cat_ops:'\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u0438/\u0437\u043d\u0430\u043d\u0438\u044f', cat_lib:'\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a',
+      mode_agents:'\ud83e\udd1d \u0441 \u0430\u0433\u0435\u043d\u0442\u0430\u043c\u0438', mode_solo:'\ud83e\udd11 \u0441\u043e\u043b\u043e', mode_clone:'\ud83d\udce6 \u043a\u043b\u043e\u043d',
+      mv_earlier:'\u0421\u0434\u0432\u0438\u043d\u0443\u0442\u044c \u00ab{name}\u00bb \u043d\u0430 \u0441\u0442\u0430\u0434\u0438\u044e \u0440\u0430\u043d\u044c\u0448\u0435', mv_later:'\u0421\u0434\u0432\u0438\u043d\u0443\u0442\u044c \u00ab{name}\u00bb \u043d\u0430 \u0441\u0442\u0430\u0434\u0438\u044e \u043f\u043e\u0437\u0436\u0435', stage_earlier:'\u0421\u0442\u0430\u0434\u0438\u044f \u0440\u0430\u043d\u044c\u0448\u0435', stage_later:'\u0421\u0442\u0430\u0434\u0438\u044f \u043f\u043e\u0437\u0436\u0435',
+      shown_of:'\u043f\u043e\u043a\u0430\u0437\u0430\u043d\u043e {n} \u0438\u0437 {m}', projects_total:'{n} \u043f\u0440\u043e\u0435\u043a\u0442\u043e\u0432',
+      k_files:'\u0442\u044b\u0441. \u0444\u0430\u0439\u043b\u043e\u0432', family:'\u0421\u0435\u043c\u0435\u0439\u0441\u0442\u0432\u043e',
+      g_r7:'\u0437\u0430 7 \u0434\u043d\u0435\u0439', g_commits:'\u043a\u043e\u043c\u043c\u0438\u0442\u043e\u0432', g_authors:'\u0430\u0432\u0442\u043e\u0440\u043e\u0432', g_branches:'\u0432\u0435\u0442\u043e\u043a', g_dirty:'\u043d\u0435 \u0437\u0430\u043a\u043e\u043c\u043c\u0438\u0447\u0435\u043d\u043e',
+      r_size:'\u041e\u0431\u044a\u0451\u043c', r_stack:'\u0421\u0442\u0435\u043a', r_has:'\u0415\u0441\u0442\u044c', r_start:'\u041d\u0430\u0447\u0430\u043b\u043e', r_activity:'\u0410\u043a\u0442\u0438\u0432\u043d\u043e\u0441\u0442\u044c', r_path:'\u041f\u0443\u0442\u044c', no_data:'\u2014 \u043d\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445',
+      notes:'\u0417\u0430\u043c\u0435\u0442\u043a\u0438', notes_ph:'\u0414\u043e\u0431\u0430\u0432\u044c \u043f\u043e\u0434\u0440\u043e\u0431\u043d\u043e\u0441\u0442\u0438 \u043f\u043e \u043f\u0440\u043e\u0435\u043a\u0442\u0443 \u2014 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u0441\u044f \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e', notes_hint:'\u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442\u0441\u044f \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438 \u0432 \u044d\u0442\u043e\u043c \u0431\u0440\u0430\u0443\u0437\u0435\u0440\u0435', close_panel:'\u0417\u0430\u043a\u0440\u044b\u0442\u044c \u043f\u0430\u043d\u0435\u043b\u044c', all:'\u0432\u0441\u0435',
+      filesWord: function(n){ return n===1?'\u0444\u0430\u0439\u043b':(n<5?'\u0444\u0430\u0439\u043b\u0430':'\u0444\u0430\u0439\u043b\u043e\u0432'); }
+    }
+  };
+  function t(k){ var d = UI[LANG] || UI.en; return (d[k] !== undefined ? d[k] : UI.en[k]) || k; }
   var STAGES = [
-    { id:'idea',    emoji:'💡', name:'Идея / Discovery' },
-    { id:'proto',   emoji:'🧪', name:'Прототип' },
-    { id:'dev',     emoji:'🚧', name:'В разработке' },
-    { id:'beta',    emoji:'📣', name:'Бета / опубликован' },
-    { id:'prod',    emoji:'🚀', name:'Работает / прод' },
-    { id:'archive', emoji:'🧊', name:'Пауза / архив' }
+    { id:'idea',    emoji:'💡', name:t('st_idea') },
+    { id:'proto',   emoji:'🧪', name:t('st_proto') },
+    { id:'dev',     emoji:'🚧', name:t('st_dev') },
+    { id:'beta',    emoji:'📣', name:t('st_beta') },
+    { id:'prod',    emoji:'🚀', name:t('st_prod') },
+    { id:'archive', emoji:'🧊', name:t('st_archive') }
   ];
-  var CATS = { agent:'Agent-платформа', product:'Продукт', site:'Сайт/магазин', tool:'Инструмент', ops:'Операции/знания', lib:'Справочник' };
-  var MODES = { agents:'🤝 с агентами', solo:'🧑‍💻 соло', clone:'📦 клон' };
-  /* [id, название, категория, режим, стадия по умолчанию, путь, статичная активность (переопределяется ACT), описание] — редактируйте вручную;
-     репозитории из kanban-projects.json, отсутствующие здесь, Updater добавит минимальные карточки (auto_register) */
+  var CATS = { agent:t('cat_agent'), product:t('cat_product'), site:t('cat_site'), tool:t('cat_tool'), ops:t('cat_ops'), lib:t('cat_lib') };
+  var MODES = { agents:t('mode_agents'), solo:t('mode_solo'), clone:t('mode_clone') };
+  /* [id, name, category, mode, default stage, path, static activity (overridden by ACT), description] — edit by hand;
+     repos from kanban-projects.json missing here get minimal cards from the updater (auto_register) */
   var P = [
     ['demo-app','Demo Web App','product','agents','dev','~/code/demo-app','2026-11','Example product built with AI agents: spec-driven workflow, tests as the executable spec.'],
     ['demo-bot','Demo Telegram Bot','product','solo','proto','~/code/demo-bot','2026-10','Small bot prototype: leads, dialogues, single-file core.'],
@@ -126,16 +160,16 @@ body {
     ['fam-a','Family Part A','agent','agents','dev','~/code/fam-a','2026-11','Part A of a family: related repos forming one product.'],
     ['fam-b','Family Part B','agent','agents','proto','~/code/fam-b','2026-10','Part B of the same family.']
   ];
-  /* KB-DATA-BEGIN — блок генерируется kanban-update.py, ручные правки внутри будут перезаписаны */
+  /* KB-DATA-BEGIN — generated by kanban-update.py; manual edits inside will be overwritten */
   var KB_UPDATED = '';
   var ACT = {};
-  /* дата начала: первый коммит в git; '' — git-истории нет, данных нет */
+  /* start date: first git commit; '' — no git history */
   var START = {};
-  /* факты из репозиториев: c=коммитов, a=авторов, b=веток, w=worktree, d=не закоммичено, f=файлов, l=стек, m=инфраструктура/доки, r=remote, r7=коммитов за 7 дней */
+  /* repo facts: c=commits, a=authors, b=branches, w=worktrees, d=uncommitted, f=files, l=stack, m=infra/markers, r=remote, r7=commits in last 7 days */
   var EXTRA = {};
   /* KB-DATA-END */
 
-  /* семейства: связанные части одного проекта, разложенные по разным стадиям (ручные данные, апдейтером не трогаются) */
+  /* families: related parts of one project across stages (manual data, untouched by the updater) */
   var GROUP = {
     'fam-a':'fam-demo', 'fam-b':'fam-demo'
   };
@@ -186,6 +220,15 @@ body {
     detail.style.maxHeight = 'calc(100vh - 24px)';
     detail.style.overflowY = 'auto';
   }
+  var subMid=document.getElementById('kb-sub-mid'), subTail=document.getElementById('kb-sub-tail'), legendEl=document.getElementById('kb-legend');
+  if(subMid) subMid.textContent = t('sub_facts')+' ';
+  if(subTail) subTail.textContent = ' '+t('sub_hint');
+  if(legendEl) legendEl.textContent = t('legend');
+  var lblCat=document.getElementById('kb-lbl-cat'), lblMode=document.getElementById('kb-lbl-mode'), resetBtn=document.getElementById('kb-f-reset');
+  if(lblCat) lblCat.textContent = t('filter_cat');
+  if(lblMode) lblMode.textContent = t('filter_mode');
+  if(resetBtn) resetBtn.textContent = t('reset_filters');
+  if(board) board.setAttribute('aria-label', t('board_aria'));
   function render(){
     var cols = {};
     STAGES.forEach(function(s){ cols[s.id]=[]; });
@@ -213,8 +256,8 @@ body {
              +  '<div class="kb-meta"><span class="kb-chip">'+esc(CATS[p[2]]||'')+'</span><span class="kb-chip">'+esc(MODES[p[3]]||'')+'</span><span class="kb-date tabular-nums">'+esc(la)+'</span></div>'
              +  (g ? '<div class="kb-meta"><span class="kb-chip">◼ '+esc(G[g].name)+'</span></div>' : '')
              +  '<div class="kb-path">'+esc(p[5])+'</div>'
-             +  '<div class="kb-mvrow"><button type="button" class="kb-mv" data-mv="-1" data-id="'+p[0]+'" aria-label="Сдвинуть «'+esc(p[1])+'» на стадию раньше" data-tooltip="Стадия раньше">←</button>'
-             +  '<button type="button" class="kb-mv" data-mv="1" data-id="'+p[0]+'" aria-label="Сдвинуть «'+esc(p[1])+'» на стадию позже" data-tooltip="Стадия позже">→</button>'
+             +  '<div class="kb-mvrow"><button type="button" class="kb-mv" data-mv="-1" data-id="'+p[0]+'" aria-label="'+esc(t('mv_earlier').replace('{name}',p[1]))+'" data-tooltip="'+t('stage_earlier')+'">←</button>'
+             +  '<button type="button" class="kb-mv" data-mv="1" data-id="'+p[0]+'" aria-label="'+esc(t('mv_later').replace('{name}',p[1]))+'" data-tooltip="'+t('stage_later')+'">→</button>'
              +  '<span class="kb-mv-note">'+esc((STAGES[stageIndex(stages[p[0]]||p[4])]||{}).name||'')+'</span></div>'
              +  '</article>';
       });
@@ -222,7 +265,7 @@ body {
     });
     board.innerHTML = html;
     var total = document.getElementById('kb-total');
-    if(total) total.textContent = (filters.cat || filters.mode) ? ('показано '+shown+' из '+P.length) : (String(P.length)+' проектов');
+    if(total) total.textContent = (filters.cat || filters.mode) ? t('shown_of').replace('{n}',shown).replace('{m}',P.length) : t('projects_total').replace('{n}',P.length);
   }
   function move(id, dir){
     var cur = stageIndex(stages[id]);
@@ -264,8 +307,8 @@ body {
   });
   function byId(id){ for(var i=0;i<P.length;i++) if(P[i][0]===id) return P[i]; return null; }
   function fmtFiles(n){
-    if(n >= 1000) return (Math.round(n/100)/10)+' тыс. файлов';
-    return n + ' ' + (n===1?'файл':(n<5?'файла':'файлов'));
+    if(n >= 1000) return (Math.round(n/100)/10)+' '+t('k_files');
+    return n + ' ' + (UI[LANG] && UI[LANG].filesWord ? UI[LANG].filesWord(n) : 'files');
   }
   function renderPanel(){
     var p = byId(selId);
@@ -280,35 +323,35 @@ body {
         var qs = STAGES[stageIndex(stages[q[0]]||q[4])] || {};
         rows += '<button type="button" class="kb-fampart" data-part="'+q[0]+'"><span>'+esc(q[1])+'</span><span class="kb-st">'+esc((qs.emoji||'')+' '+(qs.name||''))+'</span></button>';
       });
-      parts = '<div class="kb-famblock"><div class="kb-famname">Семейство: '+esc(G[g].name)+'</div>'
+      parts = '<div class="kb-famblock"><div class="kb-famname">'+t('family')+': '+esc(G[g].name)+'</div>'
             + '<div class="kb-desc">'+esc(G[g].note)+'</div>'
             + '<div class="kb-rows">'+rows+'</div></div>';
     }
     var x = EXTRA[p[0]] || {};
     var facts = '';
     var gitBits = [];
-    if(x.r7 != null && x.r7 > 0) gitBits.push('за 7 дней: '+x.r7);
-    if(x.c != null) gitBits.push('коммитов: '+x.c);
-    if(x.a != null) gitBits.push('авторов: '+x.a);
-    if(x.b > 1) gitBits.push('веток: '+x.b);
+    if(x.r7 != null && x.r7 > 0) gitBits.push(t('g_r7')+': '+x.r7);
+    if(x.c != null) gitBits.push(t('g_commits')+': '+x.c);
+    if(x.a != null) gitBits.push(t('g_authors')+': '+x.a);
+    if(x.b > 1) gitBits.push(t('g_branches')+': '+x.b);
     if(x.w > 1) gitBits.push('worktree: '+x.w);
-    if(x.d > 0) gitBits.push('не закоммичено: '+x.d);
+    if(x.d > 0) gitBits.push(t('g_dirty')+': '+x.d);
     if(gitBits.length) facts += '<div class="kb-row"><b>Git:</b><span>'+esc(gitBits.join(' · '))+'</span></div>';
     if(x.r) facts += '<div class="kb-row"><b>Remote:</b><span><a class="kb-link" href="'+esc(x.r)+'" target="_blank" rel="noopener">'+esc(x.r.replace(/^https:\/\/[^\/]+\//,''))+'</a></span></div>';
-    if(x.f != null && x.f > 0) facts += '<div class="kb-row"><b>Объём:</b><span>'+esc(fmtFiles(x.f))+'</span></div>';
-    if(x.l && x.l.length) facts += '<div class="kb-row"><b>Стек:</b><span>'+esc(x.l.join(', '))+'</span></div>';
-    if(x.m && x.m.length) facts += '<div class="kb-row"><b>Есть:</b><span>'+esc(x.m.join(', '))+'</span></div>';
+    if(x.f != null && x.f > 0) facts += '<div class="kb-row"><b>'+t('r_size')+'</b><span>'+esc(fmtFiles(x.f))+'</span></div>';
+    if(x.l && x.l.length) facts += '<div class="kb-row"><b>'+t('r_stack')+'</b><span>'+esc(x.l.join(', '))+'</span></div>';
+    if(x.m && x.m.length) facts += '<div class="kb-row"><b>'+t('r_has')+'</b><span>'+esc(x.m.join(', '))+'</span></div>';
     var factsBlock = facts ? '<div class="kb-rows kb-facts">'+facts+'</div>' : '';
-    var notesBlock = '<div class="kb-notewrap"><label class="kb-notelab" for="kb-note">Заметки</label>'
-      + '<textarea id="kb-note" class="kb-note" placeholder="Добавь подробности по проекту — сохранится локально"></textarea>'
-      + '<div class="kb-notehint">сохраняется автоматически в этом браузере</div></div>';
-    detail.innerHTML = '<button type="button" class="kb-close" aria-label="Закрыть панель">✕</button>'
+    var notesBlock = '<div class="kb-notewrap"><label class="kb-notelab" for="kb-note">'+t('notes')+'</label>'
+      + '<textarea id="kb-note" class="kb-note" placeholder="'+t('notes_ph')+'"></textarea>'
+      + '<div class="kb-notehint">'+t('notes_hint')+'</div></div>';
+    detail.innerHTML = '<button type="button" class="kb-close" aria-label="'+t('close_panel')+'">✕</button>'
       + '<h3>'+esc(p[1])+'</h3>'
       + '<div class="kb-meta"><span class="kb-chip">'+esc(CATS[p[2]]||'')+'</span><span class="kb-chip">'+esc(MODES[p[3]]||'')+'</span><span class="kb-chip">'+esc((st.emoji||'')+' '+(st.name||''))+'</span></div>'
       + '<div class="kb-rows">'
-      + '<div class="kb-row"><b>Начало:</b><span>'+esc(START[p[0]] || '— нет данных')+'</span></div>'
-      + '<div class="kb-row"><b>Активность:</b><span>'+esc(ACT[p[0]] || p[6])+'</span></div>'
-      + '<div class="kb-row"><b>Путь:</b><span class="kb-path">'+esc(p[5])+'</span></div>'
+      + '<div class="kb-row"><b>'+t('r_start')+'</b><span>'+esc(START[p[0]] || t('no_data'))+'</span></div>'
+      + '<div class="kb-row"><b>'+t('r_activity')+'</b><span>'+esc(ACT[p[0]] || p[6])+'</span></div>'
+      + '<div class="kb-row"><b>'+t('r_path')+'</b><span class="kb-path">'+esc(p[5])+'</span></div>'
       + '</div>'
       + '<div class="kb-desc">'+esc(p[7])+'</div>'
       + factsBlock
@@ -360,7 +403,7 @@ body {
   var selMode = document.getElementById('kb-f-mode');
   var resetBtn = document.getElementById('kb-f-reset');
   function fillSelect(sel, map){
-    var html = '<option value="">все</option>';
+    var html = '<option value="">'+t('all')+'</option>';
     for(var k in map) html += '<option value="'+k+'">'+esc(map[k])+'</option>';
     sel.innerHTML = html;
   }

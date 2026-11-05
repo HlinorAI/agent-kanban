@@ -21,7 +21,7 @@ Solo developers working with multiple AI agents (Claude Code, Codex, ZCode, etc.
 - No runtime dependencies beyond Python 3.8+ stdlib and git. Local-only: no network calls, no telemetry.
 
 ## Constraints / decisions
-- UI strings are Russian in v0.1 (origin); i18n is backlog.
+- UI language: `var LANG` in the board (default 'en', 'ru' switch), UI dictionary EN/RU in template; CLI messages English.
 - `auto_register: true` in config: updater may append minimal card entries for repos missing in the manual `P` list; user enriches descriptions later.
 - Privacy: example data only in the repo; installer/updater never phone home.
 - License: MIT.

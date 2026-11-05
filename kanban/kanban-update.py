@@ -60,7 +60,7 @@ def resolve_kanban_path(argv):
         cand = os.path.join(base, "kanban.html")
         if os.path.isfile(cand):
             return cand
-    print("ОШИБКА: kanban.html не найден; укажите путь аргументом")
+    print("ERROR: kanban.html not found; pass the path as an argument")
     sys.exit(1)
 
 
@@ -83,23 +83,89 @@ def sanitize_remote(url):
     return url if url.startswith("https://") else None
 
 
-def newest_mtime_date(path):
-    """Date of the most recently modified file (works without commits)."""
-    newest = 0.0
+def git_file_list(path):
+    """Tracked + untracked-not-ignored files (respects .gitignore); None on failure."""
+    try:
+        r = subprocess.run(["git", "-C", path, "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                           capture_output=True, timeout=300)
+        if r.returncode != 0:
+            return None
+        return [p for p in r.stdout.decode("utf-8", "replace").split("\0") if p]
+    except Exception:
+        return None
+
+
+def walk_file_list(path):
+    """Fallback listing for non-git directories (uses SKIP_DIRS)."""
+    files = []
     for root, dirs, fnames in os.walk(path):
-        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.endswith(".xcodeproj")]
         for f in fnames:
-            if f in SKIP_FILES or f.startswith("."):
+            if f in SKIP_FILES:
                 continue
-            try:
-                mt = os.path.getmtime(os.path.join(root, f))
-            except OSError:
-                continue
+            files.append(os.path.relpath(os.path.join(root, f), path))
+    return files
+
+
+def scan_files(path, git_ok):
+    """Single pass over the file list: newest mtime, count, extensions, markers."""
+    rel_files = git_file_list(path) if git_ok else None
+    if rel_files is None:
+        rel_files = walk_file_list(path)
+    newest = 0.0
+    files_total = 0
+    ext_count = {}
+    marks = set()
+    for rel in rel_files:
+        base = os.path.basename(rel)
+        if base in SKIP_FILES:
+            continue
+        segs = rel.split("/")
+        if "tests" in segs or "test" in segs:
+            marks.add("tests")
+        if ".agent-gates" in segs:
+            marks.add(".agent-gates")
+        if len(segs) >= 2 and segs[0] == ".github" and segs[1] == "workflows":
+            marks.add("CI")
+        files_total += 1
+        try:
+            mt = os.path.getmtime(os.path.join(path, rel))
             if mt > newest:
                 newest = mt
-    if not newest:
-        return ""
-    return datetime.fromtimestamp(newest).strftime("%Y-%m-%d")
+        except OSError:
+            pass
+        if len(segs) == 1:
+            if base == "README.md":
+                marks.add("README")
+            elif base == "PROJECT_PLAN.md":
+                marks.add("PROJECT_PLAN")
+            elif base == "TODO.md":
+                marks.add("TODO")
+            elif base == "CHANGELOG.md":
+                marks.add("CHANGELOG")
+            elif base == "WORKLOG.md":
+                marks.add("WORKLOG")
+            elif base == "Dockerfile":
+                marks.add("Docker")
+            elif base.startswith("docker-compose") and base.endswith((".yml", ".yaml")):
+                marks.add("docker-compose")
+            elif base == "package.json":
+                marks.add("Node")
+            elif base in ("pyproject.toml", "requirements.txt", "setup.py"):
+                marks.add("Python pkg")
+            elif base == "go.mod":
+                marks.add("Go module")
+            elif base == "Cargo.toml":
+                marks.add("Rust")
+            elif base.startswith("wrangler") and base.endswith((".toml", ".jsonc", ".json")):
+                marks.add("Cloudflare Workers")
+            elif base == "Makefile":
+                marks.add("Makefile")
+        ext = os.path.splitext(base)[1].lower()
+        if ext in LANGS:
+            ext_count[LANGS[ext]] = ext_count.get(LANGS[ext], 0) + 1
+    mt_date = datetime.fromtimestamp(newest).strftime("%Y-%m-%d") if newest else ""
+    return mt_date, files_total, ext_count, marks
 
 
 def max_date(a, b):
@@ -154,55 +220,8 @@ def collect(projects):
             rr = sanitize_remote(git(path, ["config", "--get", "remote.origin.url"]))
             if rr:
                 x["r"] = rr
-        mt_date = newest_mtime_date(path)
+        mt_date, files_total, ext_count, marks = scan_files(path, git_ok)
         act[pid] = max_date(last_git, mt_date)
-        ext_count = {}
-        files_total = 0
-        marks = set()
-        for root, dirs, fnames in os.walk(path):
-            dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.endswith(".xcodeproj")]
-            rel = os.path.relpath(root, path)
-            for d in dirs:
-                if d in ("tests", "test"):
-                    marks.add("тесты")
-                if d == ".agent-gates":
-                    marks.add(".agent-gates")
-            if os.path.isdir(os.path.join(root, ".github", "workflows")):
-                marks.add("CI")
-            for f in fnames:
-                if f in SKIP_FILES:
-                    continue
-                files_total += 1
-                if rel == ".":
-                    if f == "README.md":
-                        marks.add("README")
-                    elif f == "PROJECT_PLAN.md":
-                        marks.add("PROJECT_PLAN")
-                    elif f == "TODO.md":
-                        marks.add("TODO")
-                    elif f == "CHANGELOG.md":
-                        marks.add("CHANGELOG")
-                    elif f == "WORKLOG.md":
-                        marks.add("WORKLOG")
-                    elif f == "Dockerfile":
-                        marks.add("Docker")
-                    elif f.startswith("docker-compose") and f.endswith((".yml", ".yaml")):
-                        marks.add("docker-compose")
-                    elif f == "package.json":
-                        marks.add("Node")
-                    elif f in ("pyproject.toml", "requirements.txt", "setup.py"):
-                        marks.add("Python-пакет")
-                    elif f == "go.mod":
-                        marks.add("Go-модуль")
-                    elif f == "Cargo.toml":
-                        marks.add("Rust")
-                    elif f.startswith("wrangler") and f.endswith((".toml", ".jsonc", ".json")):
-                        marks.add("Cloudflare Workers")
-                    elif f == "Makefile":
-                        marks.add("Makefile")
-                ext = os.path.splitext(f)[1].lower()
-                if ext in LANGS:
-                    ext_count[LANGS[ext]] = ext_count.get(LANGS[ext], 0) + 1
         if files_total:
             x["f"] = files_total
         top = sorted(ext_count.items(), key=lambda kv: -kv[1])
@@ -247,12 +266,12 @@ def js_map_extra(m):
 def build_block(act, start, extra):
     today = date.today().strftime("%Y-%m-%d")
     return (
-        "/* KB-DATA-BEGIN — блок генерируется kanban-update.py, ручные правки внутри будут перезаписаны */\n"
+        "/* KB-DATA-BEGIN — generated by kanban-update.py; manual edits inside will be overwritten */\n"
         f"  var KB_UPDATED = {js_str(today)};\n"
         f"  var ACT = {js_map_str(act)};\n"
-        "  /* дата начала: первый коммит в git; '' — git-истории нет, данных нет */\n"
+        "  /* start date: first git commit; '' — no git history */\n"
         f"  var START = {js_map_str(start)};\n"
-        "  /* факты из репозиториев: c=коммитов, a=авторов, b=веток, w=worktree, d=не закоммичено, f=файлов, l=стек, m=инфраструктура/доки, r=remote, r7=коммитов за 7 дней */\n"
+        "  /* repo facts: c=commits, a=authors, b=branches, w=worktrees, d=uncommitted, f=files, l=stack, m=infra/markers, r=remote, r7=commits in last 7 days */\n"
         f"  var EXTRA = {js_map_extra(extra)};\n"
         "  /* KB-DATA-END */"
     )
@@ -260,7 +279,7 @@ def build_block(act, start, extra):
 
 def p_headline(raw_path):
     base = os.path.basename(os.path.normpath(os.path.expanduser(str(raw_path))))
-    return base or "Без названия"
+    return base or "untitled"
 
 
 def auto_register(text, projects):
@@ -278,13 +297,18 @@ def auto_register(text, projects):
             if str(raw).startswith("~") or os.path.expanduser(str(raw)).startswith(os.path.expanduser("~")) \
             else str(raw)
         inserts.append(
-            f"    ['{pid}',{js_str(p_headline(raw))},'product','solo','idea',{js_str(path_disp)},'',""''], "
-            + AUTO_COMMENT
+            f"    ['{pid}',{js_str(p_headline(raw))},'product','solo','idea',{js_str(path_disp)},'',''] {AUTO_COMMENT}"
         )
         added += 1
     if not inserts:
         return text, 0
-    new_body = body + "\n" + "\n".join(inserts) + "\n"
+    # normalize: exactly one comma between array elements regardless of how the
+    # manual block ended (a missing comma would parse "next[entry]" as an index
+    # access and leave an undefined hole in P, blanking the board)
+    body_norm = body.rstrip()
+    if body_norm.endswith(","):
+        body_norm = body_norm[:-1].rstrip()
+    new_body = body_norm + ",\n" + ",\n".join(inserts) + "\n"
     return text[:m.start(1)] + new_body + text[m.end(1):], added
 
 
@@ -293,7 +317,7 @@ def main():
     config, cfg_path = load_config(kanban)
     projects = config.get("projects", {})
     if not projects:
-        print(f"ОШИБКА: kanban-projects.json не найден или пуст (искал рядом с {kanban} и скриптом)")
+        print(f"ERROR: kanban-projects.json not found or empty (looked next to {kanban} and the script)")
         sys.exit(1)
     act, start, extra = collect(projects)
     with open(kanban, encoding="utf-8") as f:
@@ -305,14 +329,14 @@ def main():
     block = build_block(act, start, extra)
     new_text, n = re.subn(r"/\* KB-DATA-BEGIN.*?/\* KB-DATA-END \*/", block, text, flags=re.S)
     if n != 1:
-        print(f"ОШИБКА: маркеры KB-DATA-BEGIN/END не найдены или неоднозначны ({n})")
+        print(f"ERROR: KB-DATA markers not found or ambiguous ({n})")
         sys.exit(1)
     for guard in GUARDS:
         if guard not in new_text:
-            print(f"ОШИБКА: после замены пропал {guard} — маркеры охватывают ручные данные, запись отменена")
+            print(f"ERROR: {guard} missing after replacement — markers would swallow manual data, write cancelled")
             sys.exit(1)
     if new_text == text:
-        print("Изменений нет.")
+        print("No changes.")
         return
     backup = kanban + ".bak"
     with open(backup, "w", encoding="utf-8") as f:
@@ -322,7 +346,7 @@ def main():
         f.write(new_text)
     os.replace(tmp, kanban)
     n_act = sum(1 for v in act.values() if v)
-    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} обновлено: ACT={n_act}, START={len(start)}, EXTRA={len(extra)}, auto-register={n_added}; бэкап: {backup}")
+    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} updated: ACT={n_act}, START={len(start)}, EXTRA={len(extra)}, auto-register={n_added}; backup: {backup}")
 
 
 if __name__ == "__main__":

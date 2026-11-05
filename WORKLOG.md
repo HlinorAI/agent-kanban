@@ -30,3 +30,9 @@ Resume point: publish step in TODO.md "Now".
 - Owner said "делаем публичным" → visibility flipped to PUBLIC via gh, verified via API: PUBLIC https://github.com/HlinorAI/agent-kanban.
 - Description + 7 topics were set earlier; README EN/RU final; all pre-public audits green (secrets history scan, live clone→wizard→app cycle).
 - Kit is now live for external users. Post-public backlog stays in TODO.md (i18n, Linux docs, perf).
+
+## 2026-11-05 (v0.3: i18n + Linux docs + scanner perf; comma bug)
+- Backlog closed per owner: i18n (UI dict EN/RU, var LANG default 'en'), zero-Cyrillic invariant for template+3 py scripts; Linux docs (cron + systemd user timer); scanner fast path git ls-files -c -o --exclude-standard + single-pass stats, os.walk fallback.
+- Tests: updater on git repo with ignored junk = 1.0s wall, f == git ls-files count, marks via path segments, idempotent, non-git fallback OK.
+- REAL BUG caught by new headless-Chrome render test: auto_register appended entries without a comma after the last manual P entry → `[a]\n[b]` parses as index access → undefined hole in P → BLANK BOARD for every auto-register user since v0.1. Text-level tests never executed the page. Fixed: comma normalization in auto_register (verify: rendered columns data-col=idea..archive, cards visible, EN+RU).
+- Lesson recorded: render the page (executed DOM), not just grep the source; --dump-dom with --headless=new DOES execute JS (probe-verified), and window.onerror→document.title is a cheap error trap.

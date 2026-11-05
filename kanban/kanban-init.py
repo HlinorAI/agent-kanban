@@ -64,15 +64,15 @@ def main():
 
     root = os.path.abspath(os.path.expanduser(args.root))
     if not os.path.isdir(root):
-        print(f"ОШИБКА: каталог не найден: {root}")
+        print(f"ERROR: directory not found: {root}")
         sys.exit(1)
     if not os.path.isfile(args.template):
-        print(f"ОШИБКА: шаблон не найден: {args.template}")
+        print(f"ERROR: template not found: {args.template}")
         sys.exit(1)
 
     repos = find_repos(root)
     if not repos:
-        print(f"Git-репозитории на глубине 1 в {root} не найдены.")
+        print(f"No git repositories found (depth 1) in {root}.")
         sys.exit(1)
 
     config_path = args.config or os.path.join(root, "kanban-projects.json")
@@ -89,10 +89,10 @@ def main():
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"Найдено репозиториев: {len(repos)}")
-    print(f"Конфиг: {config_path}")
-    print(f"Дашборд: {html_path}")
-    print("Дальше: откройте kanban.html в браузере; категории и описания карточек можно поправить в блоке var P внутри файла.")
+    print(f"Repositories found: {len(repos)}")
+    print(f"Config: {config_path}")
+    print(f"Board: {html_path}")
+    print("Next: open kanban.html in a browser; edit card categories/descriptions in the var P block of the file.")
 
     if not args.no_run:
         updater = os.path.join(HERE, "kanban-update.py")
