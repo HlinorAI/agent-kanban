@@ -23,3 +23,5 @@
 - auto_register wrote card entries without a comma after the last manual P entry — parsed as an index access, leaving an undefined hole in P and a BLANK board for every user with auto-register. Present since v0.1; caught by the new headless-Chrome render test (text-level tests never executed the page). Comma normalization added.
 ### Fixed (same day)
 - Installer now ad-hoc codesigns the installed app (after xattr cleanup): unsigned bundles get SILENT TCC denials for ~/Documents (no prompt, not listed in Files & Folders). README EN/RU: TCC troubleshooting section (manual Full Disk Access path).
+### Added (same day)
+- Native launcher: `kanban/launcher.c` compiled by the installer into a universal (x86_64+arm64) binary — TCC properly attributes file access to the app and shows the Documents prompt; bash script kept as fallback when no compiler is found. Verified live: universal binary, ad-hoc signature, hidden --update-only run, clean uninstall.

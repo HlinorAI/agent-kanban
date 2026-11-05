@@ -40,3 +40,8 @@ Resume point: publish step in TODO.md "Now".
 ## 2026-11-05 (TCC: silent denials for unsigned bundles)
 - On the owner's machine, Kanban.app (personal install, unsigned at the time) never showed the Documents access prompt: instant Errno 1, absent from Files & Folders; tccutil reset of the bundle id did not help; ad-hoc codesign (after xattr -cr cleanup — codesign refuses bundles with FinderInfo detritus from cp -R) still denied instantly in the app-launched context. Root fix applied to the KIT installer: xattr cleanup + ad-hoc codesign + warning; README EN/RU gained a TCC troubleshooting section (manual Full Disk Access path with Cmd+Shift+G).
 - Owner-side completion for the personal app: manual Full Disk Access grant (System Settings) — pending owner click.
+
+## 2026-11-05 (native launcher)
+- Owner chose the compiled-launcher path (not python3 FDA) — "не каждый готов давать полный доступ". launcher.c: posix_spawn (chrome --app / open fallback; updater synced, output→log), --update-only, paths baked via -D at install time.
+- Verified on owner machine: personal Kanban.app rebuilt with universal binary → TCC PROMPT FIRED for the first time (python blocks pending decision instead of instant Errno 1). Owner granted. Kit installer compiles the binary (clang/cc), falls back to bash script when no compiler; live-tested from /tmp copy: Launcher: native, universal+adhoc, hidden run ok, uninstall clean (remote commit follows).
+- Residual: a git subprocess under the app stalled on a repo file with com.apple.macl (per-file TCC locks created by agent sessions, 201+ found across ~/Documents/Projects) — being stripped via sandboxed copy-in-place (separate worklog line in personal kanban).
