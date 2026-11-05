@@ -51,6 +51,8 @@ cd agent-kanban/kanban
 
 The app opens the board in a standalone Chrome window (no address bar) and refreshes repo facts in the background on every launch — the board opens instantly, fresh data is visible on next open or ⌘R. If no board exists yet, first launch runs the setup wizard (method 1) in a Terminal window. First launch also: macOS asks for file access once — required to read your repos, including scheduled background runs. Logs: `~/Library/Logs/kanban-app.log`.
 
+**Troubleshooting TCC:** the installer ad-hoc-signs the app precisely so macOS can show that access prompt. If the prompt never appears and updates fail with `Operation not permitted` in `~/Library/Logs/kanban-app.log`, grant access manually: System Settings → Privacy & Security → **Full Disk Access** → **+** → press **⌘⇧G** → `/Applications/ProjectKanban.app` → enable.
+
 ## Scheduled refresh without the app (Linux/macOS)
 
 cron:

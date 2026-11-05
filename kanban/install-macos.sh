@@ -90,6 +90,15 @@ chmod +x "$HERE/macos-first-run.command"
 plutil -lint "$APP_SRC/Contents/Info.plist"
 rm -rf "$TARGET"
 cp -R "$APP_SRC" "$TARGET"
+# Ad-hoc signing is required for macOS to attribute TCC access requests to the
+# app: an unsigned bundle gets SILENT denials (no prompt, not listed under
+# Files & Folders) when the updater touches ~/Documents.
+xattr -cr "$TARGET" 2>/dev/null || true
+if codesign --force --deep -s - "$TARGET" 2>/dev/null; then
+  echo "Code signing: ad-hoc signature applied."
+else
+  echo "WARNING: ad-hoc codesign failed. If macOS never shows a Documents access prompt, add the app to Full Disk Access manually."
+fi
 echo "Installed: $TARGET"
 echo "First launch: double-click ProjectKanban.app; allow Documents access when macOS asks (one time)."
 

@@ -1,6 +1,7 @@
 # TODO: agent-kanban
 
 ## Now
+- [x] 2026-11-05 TCC hardening: ad-hoc codesign in installer + README troubleshooting (silent denials without signature).
 - [x] 2026-11-05 First-run wizard (kanban-setup.py): discovery, board in ~/kanban, agent-memory seeding with confirmation; macOS app runs wizard on first launch when no board exists.
 - [x] SSOT files + spec (this dir).
 - [x] Sanitize dashboard template from working prototype (zero personal strings).

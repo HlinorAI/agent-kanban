@@ -36,3 +36,7 @@ Resume point: publish step in TODO.md "Now".
 - Tests: updater on git repo with ignored junk = 1.0s wall, f == git ls-files count, marks via path segments, idempotent, non-git fallback OK.
 - REAL BUG caught by new headless-Chrome render test: auto_register appended entries without a comma after the last manual P entry → `[a]\n[b]` parses as index access → undefined hole in P → BLANK BOARD for every auto-register user since v0.1. Text-level tests never executed the page. Fixed: comma normalization in auto_register (verify: rendered columns data-col=idea..archive, cards visible, EN+RU).
 - Lesson recorded: render the page (executed DOM), not just grep the source; --dump-dom with --headless=new DOES execute JS (probe-verified), and window.onerror→document.title is a cheap error trap.
+
+## 2026-11-05 (TCC: silent denials for unsigned bundles)
+- On the owner's machine, Kanban.app (personal install, unsigned at the time) never showed the Documents access prompt: instant Errno 1, absent from Files & Folders; tccutil reset of the bundle id did not help; ad-hoc codesign (after xattr -cr cleanup — codesign refuses bundles with FinderInfo detritus from cp -R) still denied instantly in the app-launched context. Root fix applied to the KIT installer: xattr cleanup + ad-hoc codesign + warning; README EN/RU gained a TCC troubleshooting section (manual Full Disk Access path with Cmd+Shift+G).
+- Owner-side completion for the personal app: manual Full Disk Access grant (System Settings) — pending owner click.
