@@ -17,3 +17,6 @@ Resume point: publish step in TODO.md "Now".
 - Live-tested full public flow from a fresh GitHub clone into /tmp: quickstart (init+update on 2 synthetic repos, auto-register=2, KB_UPDATED=today), install ProjectKanban.app (renamed from Kanban.app to avoid collision with personal installs), launch → updater rc=0, uninstall clean (app+LaunchAgent gone).
 - Scans: secrets (token/key patterns) across all git history — clean; personal strings (emails, /Users/, project names) — clean; artifacts in index — none.
 - Known leftovers for public flip: UI strings Russian (i18n TODO), Linux install notes TODO, commit author identity = owner's global git config (owner's call).
+
+## 2026-11-05 (решение по авторству)
+- Owner decision: commit authorship stays as-is (owner's global git identity, email visible) — "contacts belong inside git"; no noreply rewrite, no CONTACTS file. Last pre-public leftover resolved; public flip awaits owner's explicit word.
