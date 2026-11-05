@@ -17,7 +17,7 @@ body {
 <body>
 <div id="kanban-root">
   <div class="kb-head">
-    <h2>Project Kanban</h2>
+    <h2 id="kb-h2">Project Kanban</h2>
     <div class="kb-sub"><span id="kb-total" class="tabular-nums"></span> <span id="kb-sub-mid"></span> <span id="kb-updated"></span><span id="kb-sub-tail"></span></div>
     <div class="kb-legend" id="kb-legend"></div>
   </div>
@@ -107,6 +107,7 @@ body {
   var LANG = 'en'; /* UI language: 'en' or 'ru' */
   var UI = {
     en: {
+      title_dyn:'Project Kanban — facts as of {date}',
       sub_facts:'\u00b7 repo facts as of', sub_hint:'\u00b7 drag cards between stages \u2014 order is saved locally',
       legend:'Modes: \ud83e\udd1d with agents \u00b7 \ud83e\udd11 solo \u00b7 \ud83d\udce6 clone/reference \u00b7 \u25fc family \u2014 related parts of one project',
       filter_cat:'Category', filter_mode:'Mode', reset_filters:'Reset filters', board_aria:'Project kanban',
@@ -122,6 +123,7 @@ body {
       filesWord: function(n){ return n===1?'file':'files'; }
     },
     ru: {
+      title_dyn:'\u041a\u0430\u043d\u0431\u0430\u043d \u043f\u0440\u043e\u0435\u043a\u0442\u043e\u0432 \u2014 \u0434\u0430\u043d\u043d\u044b\u0435 \u043d\u0430 {date}',
       sub_facts:'\u00b7 \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u043e \u0440\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u044f\u043c \u043d\u0430', sub_hint:'\u00b7 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438 \u043f\u0435\u0440\u0435\u0442\u0430\u0441\u043a\u0438\u0432\u0430\u044e\u0442\u0441\u044f, \u043f\u043e\u0440\u044f\u0434\u043e\u043a \u0441\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u0442\u0441\u044f \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e',
       legend:'\u0420\u0435\u0436\u0438\u043c\u044b: \ud83e\udd1d \u0441 \u0430\u0433\u0435\u043d\u0442\u0430\u043c\u0438 \u00b7 \ud83e\udd11 \u0441\u043e\u043b\u043e \u00b7 \ud83d\udce6 \u043a\u043b\u043e\u043d/\u0441\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u00b7 \u25fc \u0441\u0435\u043c\u0435\u0439\u0441\u0442\u0432\u043e \u2014 \u0441\u0432\u044f\u0437\u0430\u043d\u043d\u044b\u0435 \u0447\u0430\u0441\u0442\u0438 \u043e\u0434\u043d\u043e\u0433\u043e \u043f\u0440\u043e\u0435\u043a\u0442\u0430',
       filter_cat:'\u041a\u0430\u0442\u0435\u0433\u043e\u0440\u0438\u044f', filter_mode:'\u0420\u0435\u0436\u0438\u043c', reset_filters:'\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c \u0444\u0438\u043b\u044c\u0442\u0440\u044b', board_aria:'\u041a\u0430\u043d\u0431\u0430\u043d \u043f\u0440\u043e\u0435\u043a\u0442\u043e\u0432',
@@ -206,6 +208,9 @@ body {
 
   var updEl = document.getElementById('kb-updated');
   if(updEl && KB_UPDATED) updEl.textContent = KB_UPDATED;
+  var h2El = document.getElementById('kb-h2');
+  if(h2El && KB_UPDATED) h2El.textContent = t('title_dyn').replace('{date}', KB_UPDATED);
+  if(KB_UPDATED) document.title = t('title_dyn').replace('{date}', KB_UPDATED);
 
   var filters = { cat:'', mode:'' };
   var selId = null;

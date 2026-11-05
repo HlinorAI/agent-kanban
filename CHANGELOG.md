@@ -25,3 +25,5 @@
 - Installer now ad-hoc codesigns the installed app (after xattr cleanup): unsigned bundles get SILENT TCC denials for ~/Documents (no prompt, not listed in Files & Folders). README EN/RU: TCC troubleshooting section (manual Full Disk Access path).
 ### Added (same day)
 - Native launcher: `kanban/launcher.c` compiled by the installer into a universal (x86_64+arm64) binary — TCC properly attributes file access to the app and shows the Documents prompt; bash script kept as fallback when no compiler is found. Verified live: universal binary, ad-hoc signature, hidden --update-only run, clean uninstall.
+### Added (same day)
+- Dynamic board title: `<h2>`/`document.title` show "facts as of {KB_UPDATED}" (i18n EN/RU), static fallback while no data yet.
