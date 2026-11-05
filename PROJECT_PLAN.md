@@ -27,7 +27,7 @@ Solo developers working with multiple AI agents (Claude Code, Codex, ZCode, etc.
 - License: MIT.
 
 ## Status
-2026-11-05: v0.1.0 published as **private** repo https://github.com/HlinorAI/agent-kanban (branch main, commit 60fe513). Making it public is a separate, explicitly approved step.
+2026-11-05: **PUBLIC** https://github.com/HlinorAI/agent-kanban — v0.2 with first-run wizard. Visibility change explicitly approved by owner.
 
 ## Risks / open questions
 - macOS TCC: launchd-based refresh requires a one-time Documents permission grant (documented).

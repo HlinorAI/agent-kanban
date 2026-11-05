@@ -13,7 +13,7 @@
 - [x] Published as **private** `HlinorAI/agent-kanban` (owner-approved 2026-11-05).
 
 ## Next
-- [ ] Flip to public — ONLY after explicit owner approval.
+- [x] 2026-11-05 Flipped to public by explicit owner approval (description + topics set earlier).
 - [ ] Set GitHub repo description + topics when making public.
 - [ ] i18n: English UI strings behind a small dictionary (README now bilingual EN/RU; UI still Russian).
 - [ ] Auto-refresh: updater pings a tiny HTTP endpoint OR dashboard polls file mtime.

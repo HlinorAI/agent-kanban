@@ -25,3 +25,8 @@ Resume point: publish step in TODO.md "Now".
 - Owner approved full wizard scenario. Spec .ai/specs/first-run-wizard.md; kanban-setup.py implemented; installer: default board ~/kanban/kanban.html, first launch without board → Terminal wizard (macos-first-run.command).
 - Tests (synthetic /tmp tree): depth-1/2 discovery, junk+hidden excluded, --yes/--seed/--seed-full, sentinel AGENTS.md not overwritten, refuse-to-replace existing board, interactive defaults with EOF-safe cancel. All green.
 - READMEs EN/RU: wizard = method 1; init = method 2; app = method 3; cron unchanged.
+
+## 2026-11-05 (ПУБЛИКАЦИЯ)
+- Owner said "делаем публичным" → visibility flipped to PUBLIC via gh, verified via API: PUBLIC https://github.com/HlinorAI/agent-kanban.
+- Description + 7 topics were set earlier; README EN/RU final; all pre-public audits green (secrets history scan, live clone→wizard→app cycle).
+- Kit is now live for external users. Post-public backlog stays in TODO.md (i18n, Linux docs, perf).
