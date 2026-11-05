@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Kanban</title>
+<style>
+:root { color-scheme: light dark; }
+body {
+  margin: 0;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: light-dark(#f6f6f8, #1c1c20);
+}
+</style>
+</head>
+<body>
+<div id="kanban-root">
+  <div class="kb-head">
+    <h2>Project Kanban</h2>
+    <div class="kb-sub"><span id="kb-total" class="tabular-nums"></span> проектов · данные по репозиториям на <span id="kb-updated"></span> · карточки перетаскиваются, порядок сохраняется локально</div>
+    <div class="kb-legend">Режимы: 🤝 с агентами · 🧑‍💻 соло · 📦 клон/справочник · ◼ семейство — связанные части одного проекта</div>
+  </div>
+  <div class="kb-controls">
+    <label class="kb-ctl">Категория <select id="kb-f-cat" class="kb-sel"></select></label>
+    <label class="kb-ctl">Режим <select id="kb-f-mode" class="kb-sel"></select></label>
+    <button type="button" class="kb-reset" id="kb-f-reset" hidden>Сбросить фильтры</button>
+  </div>
+  <div class="kb-body">
+    <div class="kb-board" id="kb-board" aria-label="Канбан проектов"></div>
+    <aside class="kb-detail" id="kb-detail" hidden></aside>
+  </div>
+</div>
+<style>
+#kanban-root{
+  color-scheme: light dark;
+  --kb-card: var(--card, light-dark(#ffffff, #26262a));
+  --kb-border: var(--border, light-dark(#e2e2e6, #3c3c41));
+  --kb-fg: var(--foreground, light-dark(#1d1d1f, #f2f2f4));
+  --kb-muted: var(--muted-foreground, light-dark(#6e6e76, #a4a4ad));
+  --kb-fill: var(--muted, light-dark(#f4f4f6, #2f2f34));
+  --kb-drop: var(--accent, light-dark(#e8eefc, #2b3a55));
+  font-size: 14px;
+  color: var(--kb-fg);
+}
+#kanban-root *{ box-sizing: border-box; }
+#kanban-root .kb-head h2{ margin: 0 0 4px; font-size: 18px; font-weight: 500; }
+#kanban-root .kb-sub, #kanban-root .kb-legend{ color: var(--kb-muted); font-size: 12px; }
+#kanban-root .kb-board{ display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 12px; margin-top: 12px; align-items: start; }
+#kanban-root .kb-col{ border: 1px solid var(--kb-border); border-radius: 10px; padding: 8px; min-height: 130px; transition: background .15s ease, border-color .15s ease; }
+#kanban-root .kb-col.kb-drop{ background: var(--kb-drop); border-color: var(--kb-muted); }
+#kanban-root .kb-col-h{ display: flex; align-items: baseline; gap: 6px; padding: 2px 4px 8px; font-weight: 500; }
+#kanban-root .kb-count{ margin-left: auto; color: var(--kb-muted); font-size: 12px; }
+#kanban-root .kb-cards{ display: flex; flex-direction: column; gap: 8px; }
+#kanban-root .kb-card{ background: var(--kb-card); border: 1px solid var(--kb-border); border-radius: 8px; padding: 8px 10px; cursor: grab; }
+#kanban-root .kb-card.kb-dragging{ opacity: .4; }
+#kanban-root .kb-title{ font-weight: 500; }
+#kanban-root .kb-desc{ color: var(--kb-muted); font-size: 12px; margin-top: 2px; line-height: 1.35; }
+#kanban-root .kb-meta{ display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 6px; }
+#kanban-root .kb-chip{ font-size: 11px; color: var(--kb-muted); background: var(--kb-fill); border-radius: 99px; padding: 1px 7px; white-space: nowrap; }
+#kanban-root .kb-date{ font-size: 11px; color: var(--kb-muted); margin-left: auto; white-space: nowrap; }
+#kanban-root .kb-path{ font-size: 11px; color: var(--kb-muted); margin-top: 4px; word-break: break-all; font-family: ui-monospace, Menlo, monospace; }
+#kanban-root .kb-mvrow{ display: flex; align-items: center; margin-top: 6px; gap: 2px; }
+#kanban-root .kb-mv{ border: none; background: none; color: var(--kb-muted); cursor: pointer; font-size: 13px; line-height: 1; padding: 3px 7px; border-radius: 5px; }
+#kanban-root .kb-mv:hover{ background: var(--kb-fill); color: var(--kb-fg); }
+#kanban-root .kb-mv-note{ font-size: 11px; color: var(--kb-muted); margin-left: auto; }
+#kanban-root .kb-controls{ display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+#kanban-root .kb-ctl{ display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--kb-muted); }
+#kanban-root .kb-sel{ font: inherit; font-size: 13px; color: var(--kb-fg); background: var(--kb-card); border: 1px solid var(--kb-border); border-radius: 7px; padding: 3px 6px; }
+#kanban-root .kb-reset{ font: inherit; font-size: 12px; color: var(--kb-muted); background: var(--kb-fill); border: 1px solid var(--kb-border); border-radius: 7px; padding: 3px 10px; cursor: pointer; }
+#kanban-root .kb-reset:hover{ color: var(--kb-fg); }
+#kanban-root .kb-body{ margin-top: 12px; }
+#kanban-root.kb-has-sel .kb-body{ display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 12px; align-items: start; }
+#kanban-root .kb-detail{ position: sticky; top: 8px; border: 1px solid var(--kb-border); border-radius: 10px; padding: 12px; background: var(--kb-card); font-size: 13px; }
+#kanban-root .kb-detail h3{ margin: 0 28px 6px 0; font-size: 15px; font-weight: 500; }
+#kanban-root .kb-detail .kb-meta{ margin-top: 0; }
+#kanban-root .kb-close{ position: absolute; top: 6px; right: 6px; border: none; background: none; color: var(--kb-muted); font-size: 16px; line-height: 1; cursor: pointer; padding: 3px 7px; border-radius: 5px; }
+#kanban-root .kb-close:hover{ background: var(--kb-fill); color: var(--kb-fg); }
+#kanban-root .kb-rows{ margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+#kanban-root .kb-row{ display: flex; gap: 6px; align-items: baseline; }
+#kanban-root .kb-row b{ font-weight: 500; color: var(--kb-muted); white-space: nowrap; }
+#kanban-root .kb-row .kb-path{ margin-top: 0; }
+#kanban-root .kb-detail .kb-facts{ margin-top: 10px; }
+#kanban-root .kb-link{ color: var(--kb-fg); text-decoration: underline; word-break: break-all; }
+#kanban-root .kb-notewrap{ margin-top: 10px; border-top: 1px solid var(--kb-border); padding-top: 8px; }
+#kanban-root .kb-notelab{ display: block; font-weight: 500; font-size: 12px; margin-bottom: 4px; }
+#kanban-root .kb-note{ width: 100%; min-height: 64px; resize: vertical; background: var(--kb-fill); border: 1px solid var(--kb-border); border-radius: 7px; color: var(--kb-fg); font: inherit; font-size: 12px; line-height: 1.4; padding: 6px 8px; }
+#kanban-root .kb-note:focus{ outline: none; border-color: var(--kb-muted); }
+#kanban-root .kb-notehint{ margin-top: 3px; font-size: 11px; color: var(--kb-muted); }
+#kanban-root .kb-famblock{ margin-top: 10px; border-top: 1px solid var(--kb-border); padding-top: 8px; }
+#kanban-root .kb-famname{ font-weight: 500; }
+#kanban-root .kb-famblock .kb-desc{ margin-top: 2px; }
+#kanban-root .kb-fampart{ display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; border: none; background: none; padding: 3px 4px; margin-top: 2px; border-radius: 5px; cursor: pointer; color: var(--kb-fg); font: inherit; font-size: 12px; }
+#kanban-root .kb-fampart:hover{ background: var(--kb-fill); }
+#kanban-root .kb-fampart .kb-st{ color: var(--kb-muted); margin-left: auto; white-space: nowrap; }
+#kanban-root button.kb-title{ display: block; width: 100%; border: none; background: none; padding: 0; font: inherit; font-weight: 500; color: inherit; text-align: left; cursor: pointer; }
+#kanban-root .kb-card.kb-selected{ border-color: var(--kb-muted); box-shadow: 0 0 0 1px var(--kb-muted); }
+@media (max-width: 880px){
+  #kanban-root.kb-has-sel .kb-body{ grid-template-columns: 1fr; }
+  #kanban-root .kb-detail{ position: static; }
+}
+</style>
+<script>
+(function(){
+  var root = document.getElementById('kanban-root');
+  var KEY = 'agent-kanban-v1';
+  var STAGES = [
+    { id:'idea',    emoji:'💡', name:'Идея / Discovery' },
+    { id:'proto',   emoji:'🧪', name:'Прототип' },
+    { id:'dev',     emoji:'🚧', name:'В разработке' },
+    { id:'beta',    emoji:'📣', name:'Бета / опубликован' },
+    { id:'prod',    emoji:'🚀', name:'Работает / прод' },
+    { id:'archive', emoji:'🧊', name:'Пауза / архив' }
+  ];
+  var CATS = { agent:'Agent-платформа', product:'Продукт', site:'Сайт/магазин', tool:'Инструмент', ops:'Операции/знания', lib:'Справочник' };
+  var MODES = { agents:'🤝 с агентами', solo:'🧑‍💻 соло', clone:'📦 клон' };
+  /* [id, название, категория, режим, стадия по умолчанию, путь, статичная активность (переопределяется ACT), описание] — редактируйте вручную;
+     репозитории из kanban-projects.json, отсутствующие здесь, Updater добавит минимальные карточки (auto_register) */
+  var P = [
+    ['demo-app','Demo Web App','product','agents','dev','~/code/demo-app','2026-11','Example product built with AI agents: spec-driven workflow, tests as the executable spec.'],
+    ['demo-bot','Demo Telegram Bot','product','solo','proto','~/code/demo-bot','2026-10','Small bot prototype: leads, dialogues, single-file core.'],
+    ['demo-infra','Demo Infra Kit','ops','agents','beta','~/code/demo-infra','2026-11','Provisioning scripts, docker-compose and CI for a small product.'],
+    ['demo-site','Demo Storefront','site','agents','prod','~/code/demo-site','2026-11','Live storefront: static pages + worker, basic SEO.'],
+    ['demo-notes','Demo Second Brain','ops','solo','prod','~/code/demo-notes','2026-11','Local knowledge base: inbox, wiki, daily notes.'],
+    ['demo-lib','Demo Reference Clone','lib','clone','archive','~/code/demo-lib','2026-06','Read-only clone of an upstream repository kept as reference code.'],
+    ['fam-a','Family Part A','agent','agents','dev','~/code/fam-a','2026-11','Part A of a family: related repos forming one product.'],
+    ['fam-b','Family Part B','agent','agents','proto','~/code/fam-b','2026-10','Part B of the same family.']
+  ];
+  /* KB-DATA-BEGIN — блок генерируется kanban-update.py, ручные правки внутри будут перезаписаны */
+  var KB_UPDATED = '';
+  var ACT = {};
+  /* дата начала: первый коммит в git; '' — git-истории нет, данных нет */
+  var START = {};
+  /* факты из репозиториев: c=коммитов, a=авторов, b=веток, w=worktree, d=не закоммичено, f=файлов, l=стек, m=инфраструктура/доки, r=remote, r7=коммитов за 7 дней */
+  var EXTRA = {};
+  /* KB-DATA-END */
+
+  /* семейства: связанные части одного проекта, разложенные по разным стадиям (ручные данные, апдейтером не трогаются) */
+  var GROUP = {
+    'fam-a':'fam-demo', 'fam-b':'fam-demo'
+  };
+  var G = {
+    'fam-demo': { name:'Demo Family', note:'Example family: related repositories shown as one product.' }
+  };
+
+  var stages = {};
+  var NOTES = {};
+  function defaultStages(){ var m={}; P.forEach(function(p){ m[p[0]]=p[4]; }); return m; }
+  function loadState(){
+    var saved=null;
+    try{ saved = JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){}
+    if(!saved && window.zcode && window.zcode.widgetState && window.zcode.widgetState.privateContent){
+      var pc = window.zcode.widgetState.privateContent;
+      saved = (typeof pc==='string') ? safeParse(pc) : pc;
+    }
+    if(saved && saved.notes){ for(var k in saved.notes) NOTES[k]=saved.notes[k]; }
+    return (saved && saved.stages) ? saved.stages : null;
+  }
+  function safeParse(s){ try{ return JSON.parse(s); }catch(e){ return null; } }
+  var saving = false;
+  function saveState(){
+    var data = { stages: stages, notes: NOTES, savedAt: new Date().toISOString() };
+    try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
+    if(window.zcode && window.zcode.setWidgetState){
+      saving = true;
+      try{ window.zcode.setWidgetState({ privateContent: data }).catch(function(){}); }
+      catch(e){}
+      setTimeout(function(){ saving=false; }, 500);
+    }
+  }
+  stages = loadState() || defaultStages();
+
+  var updEl = document.getElementById('kb-updated');
+  if(updEl && KB_UPDATED) updEl.textContent = KB_UPDATED;
+
+  var filters = { cat:'', mode:'' };
+  var selId = null;
+  function visible(p){ return (!filters.cat || p[2]===filters.cat) && (!filters.mode || p[3]===filters.mode); }
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function stageIndex(id){ for(var i=0;i<STAGES.length;i++) if(STAGES[i].id===id) return i; return 0; }
+
+  var board = document.getElementById('kb-board');
+  var detail = document.getElementById('kb-detail');
+  if(!(window.zcode && window.zcode.setWidgetState)){
+    detail.style.maxHeight = 'calc(100vh - 24px)';
+    detail.style.overflowY = 'auto';
+  }
+  function render(){
+    var cols = {};
+    STAGES.forEach(function(s){ cols[s.id]=[]; });
+    var shown = 0;
+    P.forEach(function(p){
+      if(!visible(p)) return;
+      shown++;
+      var st = stages[p[0]] || p[4];
+      if(!cols[st]) cols[st]=[];
+      cols[st].push(p);
+    });
+    var html='';
+    STAGES.forEach(function(s){
+      var list = cols[s.id];
+      if(!list.length) return;
+      html += '<section class="kb-col" data-col="'+s.id+'" aria-label="'+esc(s.name)+'">'
+           +  '<div class="kb-col-h"><span>'+s.emoji+'</span><span>'+esc(s.name)+'</span><span class="kb-count tabular-nums">'+list.length+'</span></div>'
+           +  '<div class="kb-cards">';
+      list.forEach(function(p){
+        var g = GROUP[p[0]];
+        var la = ACT[p[0]] || p[6];
+        html += '<article class="kb-card'+(selId===p[0]?' kb-selected':'')+'" data-card="'+p[0]+'" draggable="true">'
+             +  '<button type="button" class="kb-title" data-open="'+p[0]+'">'+esc(p[1])+'</button>'
+             +  '<div class="kb-desc">'+esc(p[7])+'</div>'
+             +  '<div class="kb-meta"><span class="kb-chip">'+esc(CATS[p[2]]||'')+'</span><span class="kb-chip">'+esc(MODES[p[3]]||'')+'</span><span class="kb-date tabular-nums">'+esc(la)+'</span></div>'
+             +  (g ? '<div class="kb-meta"><span class="kb-chip">◼ '+esc(G[g].name)+'</span></div>' : '')
+             +  '<div class="kb-path">'+esc(p[5])+'</div>'
+             +  '<div class="kb-mvrow"><button type="button" class="kb-mv" data-mv="-1" data-id="'+p[0]+'" aria-label="Сдвинуть «'+esc(p[1])+'» на стадию раньше" data-tooltip="Стадия раньше">←</button>'
+             +  '<button type="button" class="kb-mv" data-mv="1" data-id="'+p[0]+'" aria-label="Сдвинуть «'+esc(p[1])+'» на стадию позже" data-tooltip="Стадия позже">→</button>'
+             +  '<span class="kb-mv-note">'+esc((STAGES[stageIndex(stages[p[0]]||p[4])]||{}).name||'')+'</span></div>'
+             +  '</article>';
+      });
+      html += '</div></section>';
+    });
+    board.innerHTML = html;
+    var total = document.getElementById('kb-total');
+    if(total) total.textContent = (filters.cat || filters.mode) ? ('показано '+shown+' из '+P.length) : (String(P.length)+' проектов');
+  }
+  function move(id, dir){
+    var cur = stageIndex(stages[id]);
+    var next = Math.max(0, Math.min(STAGES.length-1, cur + dir));
+    if(next!==cur){ stages[id]=STAGES[next].id; saveState(); render(); }
+  }
+  var dragId=null;
+  function colOf(el){ return el ? el.closest('[data-col]') : null; }
+  root.addEventListener('dragstart', function(e){
+    var c = e.target.closest ? e.target.closest('[data-card]') : null;
+    if(!c) return;
+    dragId = c.getAttribute('data-card');
+    c.classList.add('kb-dragging');
+    e.dataTransfer.effectAllowed='move';
+    try{ e.dataTransfer.setData('text/plain', dragId); }catch(err){}
+  });
+  root.addEventListener('dragend', function(e){
+    var c = e.target.closest ? e.target.closest('[data-card]') : null;
+    if(c) c.classList.remove('kb-dragging');
+    dragId=null;
+    Array.prototype.forEach.call(root.querySelectorAll('.kb-col.kb-drop'), function(el){ el.classList.remove('kb-drop'); });
+  });
+  root.addEventListener('dragover', function(e){
+    var col = colOf(e.target);
+    if(!col || !dragId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect='move';
+    Array.prototype.forEach.call(root.querySelectorAll('.kb-col.kb-drop'), function(el){ if(el!==col) el.classList.remove('kb-drop'); });
+    col.classList.add('kb-drop');
+  });
+  root.addEventListener('drop', function(e){
+    var col = colOf(e.target);
+    if(!col || !dragId) return;
+    e.preventDefault();
+    move(dragId, 0); /* no-op to normalize */
+    stages[dragId] = col.getAttribute('data-col');
+    saveState(); render();
+    dragId=null;
+  });
+  function byId(id){ for(var i=0;i<P.length;i++) if(P[i][0]===id) return P[i]; return null; }
+  function fmtFiles(n){
+    if(n >= 1000) return (Math.round(n/100)/10)+' тыс. файлов';
+    return n + ' ' + (n===1?'файл':(n<5?'файла':'файлов'));
+  }
+  function renderPanel(){
+    var p = byId(selId);
+    if(!p){ detail.hidden = true; root.classList.remove('kb-has-sel'); return; }
+    var st = STAGES[stageIndex(stages[p[0]]||p[4])] || {};
+    var g = GROUP[p[0]];
+    var parts = '';
+    if(g && G[g]){
+      var rows = '';
+      P.forEach(function(q){
+        if(GROUP[q[0]] !== g) return;
+        var qs = STAGES[stageIndex(stages[q[0]]||q[4])] || {};
+        rows += '<button type="button" class="kb-fampart" data-part="'+q[0]+'"><span>'+esc(q[1])+'</span><span class="kb-st">'+esc((qs.emoji||'')+' '+(qs.name||''))+'</span></button>';
+      });
+      parts = '<div class="kb-famblock"><div class="kb-famname">Семейство: '+esc(G[g].name)+'</div>'
+            + '<div class="kb-desc">'+esc(G[g].note)+'</div>'
+            + '<div class="kb-rows">'+rows+'</div></div>';
+    }
+    var x = EXTRA[p[0]] || {};
+    var facts = '';
+    var gitBits = [];
+    if(x.r7 != null && x.r7 > 0) gitBits.push('за 7 дней: '+x.r7);
+    if(x.c != null) gitBits.push('коммитов: '+x.c);
+    if(x.a != null) gitBits.push('авторов: '+x.a);
+    if(x.b > 1) gitBits.push('веток: '+x.b);
+    if(x.w > 1) gitBits.push('worktree: '+x.w);
+    if(x.d > 0) gitBits.push('не закоммичено: '+x.d);
+    if(gitBits.length) facts += '<div class="kb-row"><b>Git:</b><span>'+esc(gitBits.join(' · '))+'</span></div>';
+    if(x.r) facts += '<div class="kb-row"><b>Remote:</b><span><a class="kb-link" href="'+esc(x.r)+'" target="_blank" rel="noopener">'+esc(x.r.replace(/^https:\/\/[^\/]+\//,''))+'</a></span></div>';
+    if(x.f != null && x.f > 0) facts += '<div class="kb-row"><b>Объём:</b><span>'+esc(fmtFiles(x.f))+'</span></div>';
+    if(x.l && x.l.length) facts += '<div class="kb-row"><b>Стек:</b><span>'+esc(x.l.join(', '))+'</span></div>';
+    if(x.m && x.m.length) facts += '<div class="kb-row"><b>Есть:</b><span>'+esc(x.m.join(', '))+'</span></div>';
+    var factsBlock = facts ? '<div class="kb-rows kb-facts">'+facts+'</div>' : '';
+    var notesBlock = '<div class="kb-notewrap"><label class="kb-notelab" for="kb-note">Заметки</label>'
+      + '<textarea id="kb-note" class="kb-note" placeholder="Добавь подробности по проекту — сохранится локально"></textarea>'
+      + '<div class="kb-notehint">сохраняется автоматически в этом браузере</div></div>';
+    detail.innerHTML = '<button type="button" class="kb-close" aria-label="Закрыть панель">✕</button>'
+      + '<h3>'+esc(p[1])+'</h3>'
+      + '<div class="kb-meta"><span class="kb-chip">'+esc(CATS[p[2]]||'')+'</span><span class="kb-chip">'+esc(MODES[p[3]]||'')+'</span><span class="kb-chip">'+esc((st.emoji||'')+' '+(st.name||''))+'</span></div>'
+      + '<div class="kb-rows">'
+      + '<div class="kb-row"><b>Начало:</b><span>'+esc(START[p[0]] || '— нет данных')+'</span></div>'
+      + '<div class="kb-row"><b>Активность:</b><span>'+esc(ACT[p[0]] || p[6])+'</span></div>'
+      + '<div class="kb-row"><b>Путь:</b><span class="kb-path">'+esc(p[5])+'</span></div>'
+      + '</div>'
+      + '<div class="kb-desc">'+esc(p[7])+'</div>'
+      + factsBlock
+      + parts
+      + notesBlock;
+    var ta = detail.querySelector('.kb-note');
+    if(ta) ta.value = NOTES[p[0]] || '';
+    detail.hidden = false;
+    root.classList.add('kb-has-sel');
+  }
+  function select(id, scroll){
+    selId = id;
+    render();
+    renderPanel();
+    if(scroll){
+      var el = board.querySelector('[data-card="'+id+'"]');
+      if(el && el.scrollIntoView) el.scrollIntoView({ block:'nearest' });
+    }
+  }
+  function closePanel(){ selId = null; detail.hidden = true; root.classList.remove('kb-has-sel'); render(); }
+  root.addEventListener('click', function(e){
+    if(!e.target.closest) return;
+    var close = e.target.closest('.kb-close');
+    if(close){ closePanel(); return; }
+    var mv = e.target.closest('.kb-mv');
+    if(mv){ move(mv.getAttribute('data-id'), parseInt(mv.getAttribute('data-mv'),10)); return; }
+    var part = e.target.closest('[data-part]');
+    if(part){ select(part.getAttribute('data-part'), true); return; }
+    var open = e.target.closest('[data-open]');
+    if(open){ select(open.getAttribute('data-open'), false); return; }
+    var card = e.target.closest('.kb-card');
+    if(card){ select(card.getAttribute('data-card'), false); }
+  });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && selId!==null) closePanel(); });
+
+  var noteTimer = null;
+  detail.addEventListener('input', function(e){
+    if(!e.target.classList || !e.target.classList.contains('kb-note')) return;
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(function(){
+      if(selId === null) return;
+      var v = detail.querySelector('.kb-note') ? detail.querySelector('.kb-note').value : '';
+      if(v) NOTES[selId] = v; else delete NOTES[selId];
+      saveState();
+    }, 500);
+  });
+
+  var selCat = document.getElementById('kb-f-cat');
+  var selMode = document.getElementById('kb-f-mode');
+  var resetBtn = document.getElementById('kb-f-reset');
+  function fillSelect(sel, map){
+    var html = '<option value="">все</option>';
+    for(var k in map) html += '<option value="'+k+'">'+esc(map[k])+'</option>';
+    sel.innerHTML = html;
+  }
+  fillSelect(selCat, CATS);
+  fillSelect(selMode, MODES);
+  function applyFilters(){
+    filters.cat = selCat.value;
+    filters.mode = selMode.value;
+    resetBtn.hidden = !(filters.cat || filters.mode);
+    render();
+  }
+  selCat.addEventListener('change', applyFilters);
+  selMode.addEventListener('change', applyFilters);
+  resetBtn.addEventListener('click', function(){ selCat.value=''; selMode.value=''; applyFilters(); });
+
+  window.addEventListener('zcode:set_globals', function(e){
+    if(saving) return;
+    var g = e.detail && e.detail.globals;
+    var pc = g && g.widgetState && g.widgetState.privateContent;
+    var data = (typeof pc==='string') ? safeParse(pc) : pc;
+    if(data && data.stages){
+      var cur = JSON.stringify(stages), inc = JSON.stringify(data.stages);
+      if(cur!==inc){ stages = data.stages; render(); }
+    }
+  });
+  render();
+})();
+</script>
+
+</body>
+</html>

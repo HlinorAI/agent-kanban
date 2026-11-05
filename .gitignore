@@ -1,0 +1,7 @@
+kanban.html
+kanban.html.bak
+kanban.html.tmp
+kanban-projects.json
+__pycache__/
+*.pyc
+.DS_Store

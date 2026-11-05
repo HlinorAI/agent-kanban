@@ -1,0 +1,8 @@
+{
+  "kanban_html": "kanban.html",
+  "auto_register": true,
+  "projects": {
+    "demo-app": "~/code/demo-app",
+    "demo-bot": "~/code/demo-bot"
+  }
+}
