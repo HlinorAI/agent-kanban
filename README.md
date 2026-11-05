@@ -1,40 +1,28 @@
 # agent-kanban
 
-A local, single-file **kanban board over your git repositories** plus a
-**state-driven workflow kit for AI agents** — so agents stop "forgetting" and
-you finally see all your projects at a glance.
+**A local kanban board over your git repositories + state-driven workflow templates for AI agents.**
 
-Two things in one kit:
+English | [Русский](README.ru.md)
 
-1. **Project kanban** — `kanban.html` is one HTML file showing every local repo
-   as a draggable card (stage, category, mode, last activity, commits, stack,
-   remote, dirty files). `kanban-update.py` refreshes the facts from git; you
-   keep full control of descriptions, stages and notes (stored in your browser).
-2. **State-driven agent rules** — `templates/AGENTS.md` and SSOT skeletons
-   (`PROJECT_PLAN / TODO / CHANGELOG / WORKLOG`, specs in `.ai/specs/`) to drop
-   into any project, so every agent session reads state before acting and
-   writes it back after.
+One HTML file shows every local repo as a draggable card: stage, category, last activity, commits, stack, dirty files, remote. A Python script refreshes the facts from git; you own the descriptions, stages and notes. No network, no telemetry, no accounts.
 
-**Local-only by design**: no network calls, no telemetry, no accounts.
-Dependencies: Python 3.8+, git, any modern browser.
+**Requires:** Python 3.8+, git, any modern browser. macOS optional (for the app launcher).
 
-## Quickstart
+## What's inside
+
+- `kanban/` — the dashboard (single HTML file), updater, installer
+- `templates/` — agent SSOT skeletons: `AGENTS.md`, `PROJECT_PLAN.md`, `TODO.md`, `CHANGELOG.md`, `WORKLOG.md`
+
+## Install — method 1: CLI (any OS)
 
 ```bash
-git clone <this-repo> agent-kanban && cd agent-kanban
-
-# point it at a folder of git repos (one level deep):
-python3 kanban/kanban-init.py ~/code
-
-# open the dashboard
-open ~/code/kanban.html          # macOS
-# xdg-open ~/code/kanban.html    # Linux
+git clone https://github.com/HlinorAI/agent-kanban.git
+cd agent-kanban
+python3 kanban/kanban-init.py ~/code        # a folder with your git repos (one level deep)
+open ~/code/kanban.html                     # xdg-open on Linux
 ```
 
-`kanban-init.py` writes `kanban-projects.json` (the repo list) and
-`kanban.html` (your board). Edit descriptions/categories by hand in the
-`var P = [...]` block of `kanban.html`; everything between the
-`KB-DATA-BEGIN/END` markers belongs to the updater — don't edit that.
+`kanban-init.py` finds your repos, writes `kanban-projects.json` (the repo list), creates `kanban.html` from the template and fills in repo facts.
 
 Refresh facts any time:
 
@@ -42,56 +30,45 @@ Refresh facts any time:
 python3 kanban/kanban-update.py ~/code/kanban.html
 ```
 
-Add or remove repos by editing `kanban-projects.json` (see
-`kanban/kanban-projects.example.json`). New repos are auto-registered as
-minimal cards on the next update (`auto_register: true`).
-
-## macOS: launch it like an app
+## Install — method 2: macOS app
 
 ```bash
-cd kanban
-./install-macos.sh               # installs ProjectKanban.app
-./install-macos.sh --with-schedule   # + hidden refresh at login and daily 09:00
-./uninstall-macos.sh
+cd agent-kanban/kanban
+./install-macos.sh --html ~/code/kanban.html                    # installs ProjectKanban.app
+./install-macos.sh --html ~/code/kanban.html --with-schedule    # + refresh at login and daily 09:00
+./uninstall-macos.sh                                            # full removal
 ```
 
-The app (ProjectKanban.app) opens the board in a standalone Chrome window (`--app`, no address
-bar) and refreshes repo facts in the background on every launch. First launch:
-macOS will ask for access to your files (one time) — this is required for
-reading your repos, including from the scheduled background refresh.
-Logs: `~/Library/Logs/kanban-app.log`. Linux/Windows: run the updater from
-cron/Task Scheduler — same effect, no app wrapper (docs: TODO).
+The app opens the board in a standalone Chrome window (no address bar) and refreshes repo facts in the background on every launch — the board opens instantly, fresh data is visible on next open or ⌘R. First launch: macOS asks for file access once — required to read your repos, including scheduled background runs. Logs: `~/Library/Logs/kanban-app.log`.
+
+## Scheduled refresh without the app (cron, Linux/macOS)
+
+```cron
+0 9 * * * cd /path/to/agent-kanban && python3 kanban/kanban-update.py /path/to/kanban.html >> /tmp/kanban-update.log 2>&1
+```
+
+## Editing your board
+
+- Cards, categories, descriptions: edit the `var P = [...]` block in `kanban.html`.
+- Everything between `/* KB-DATA-BEGIN … KB-DATA-END */` belongs to the updater — it makes a `.bak` first and refuses to save if its guards detect manual data in the zone.
+- Repos listed in `kanban-projects.json` but missing from `P` get minimal auto-generated cards (`auto_register: true`) — enrich them later.
+- Stage moves and notes are stored in your browser (localStorage), nothing is written back to the file.
+- Related repos can be grouped into families (`GROUP`/`G` blocks) and shown as one product.
 
 ## Agent workflow kit
 
-Copy `templates/AGENTS.md`, `templates/PROJECT_PLAN.md`, `templates/TODO.md`,
-`templates/CHANGELOG.md`, `templates/WORKLOG.md` into your project root (this
-repo itself uses them — look around). Point your coding agent (Claude Code,
-Codex, ZCode, Cursor, …) at `AGENTS.md`; most tools pick it up automatically.
-For non-trivial features, keep short specs in `.ai/specs/<topic>.md` before
-writing code.
+Copy `templates/*.md` into your project root and point your coding agent (Claude Code, Codex, ZCode, Cursor, …) at `AGENTS.md` — most tools pick it up automatically. The loop it enforces: read project state before acting (files, not chat memory), write state back after every meaningful step, short spec in `.ai/specs/` before non-trivial code, tests as the executable spec, and never claim a feature is missing without checking specs, tests and code.
 
-## How the dashboard stays safe to edit
+## Privacy
 
-- Everything outside `/* KB-DATA-BEGIN … KB-DATA-END */` is yours: cards,
-  descriptions, families, stages, notes (notes and manual stage moves live in
-  browser localStorage).
-- The updater regenerates only the marker block, writes a `.bak` first, and
-  refuses to save if its guards detect the markers swallowed manual data.
+Local-only by design: reads your repos via `git` and the filesystem, never opens network connections, and sanitizes remote URLs before showing them.
 
-## Privacy & security
+## Known limitations
 
-- The board reads only local files via `git` and the filesystem; it never
-  opens network connections.
-- Remotes are shown URL-sanitized (credentials stripped).
-- Nothing leaves your machine.
-
-## Status & roadmap
-
-v0.1.0 — see [TODO.md](TODO.md) and [PROJECT_PLAN.md](PROJECT_PLAN.md).
-Known limits: UI strings are currently in Russian (i18n planned); very large
-folders scan slowly (fast `git ls-files` path planned).
+- UI strings are in Russian in v0.1 (i18n planned — see TODO.md).
+- Very large repo folders scan slowly.
+- The single-file board stays comfortable up to ~100 cards.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE)

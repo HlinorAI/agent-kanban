@@ -14,7 +14,7 @@
 ## Next
 - [ ] Flip to public — ONLY after explicit owner approval.
 - [ ] Set GitHub repo description + topics when making public.
-- [ ] i18n: English UI strings behind a small dictionary.
+- [ ] i18n: English UI strings behind a small dictionary (README now bilingual EN/RU; UI still Russian).
 - [ ] Auto-refresh: updater pings a tiny HTTP endpoint OR dashboard polls file mtime.
 - [ ] Linux/Windows install notes (+ optional cron/systemd timer example).
 - [ ] Performance: `git ls-files` fast path for large repos.

@@ -9,3 +9,4 @@
 
 ### 2026-11-05
 - Published as private repo HlinorAI/agent-kanban (main, 60fe513); .gitignore added.
+- Bilingual docs: README.md (EN) + README.ru.md (RU) with three install methods (CLI / macOS app / cron); lean-down of README, removed duplicated roadmap section.
